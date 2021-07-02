@@ -51,7 +51,7 @@ The course will make heavy use of the following software packages
 
 - **Arduino** Download and install the [Arduino IDE](https://www.arduino.cc/en/main/software) Click the `JUST DOWNLOAD` link to the left of the `CONTRIBUTE & DOWNLOAD` button. Once downloaded follow the instructions to install.
     
-- **GitHub** Create an account on [GitHub](https://github.com)** if you don't already have one.
+- **GitHub** Create an account on [GitHub](https://github.com) if you don't already have one.
 
 - **Git client.** If you are comfortable using Git on the command line then go for it. If you prefer a GUI representation then download a git client to make your life easier. 
     - We use [Tower](https://www.git-tower.com/) which has a [free version for students](https://www.git-tower.com/students/mac). 
