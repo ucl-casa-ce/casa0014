@@ -35,12 +35,12 @@ This modules runs twice per week during the first half of term one (10 sessions 
 ## Topics covered
 
   1. Introduction to Connected Environments
-  2. Hello Monster Design Brief - [the repo for this project is linked here](/blinkingmonster)
+  2. Hello Monster Design Brief - [the repo for this project is linked here](https://github.com/ucl-casa-ce/casa0014/tree/main/blinkingmonster)
   3. Hello Monster Crit
   4. Living Lab Walkshop
   5. Anatomy of an IoT system I
   6. Anatomy of an IoT system II
-  7. Plant Monitor I  - [the repo for this project is linked here](/plantMonitor)
+  7. Plant Monitor I  - [the repo for this project is linked here](https://github.com/ucl-casa-ce/casa0014/tree/main/plantMonitor)
   8. Plant Monitor II
   9. IoT Platforms
   10. Future IoT 
