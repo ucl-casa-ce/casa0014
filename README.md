@@ -62,3 +62,5 @@ The course will make heavy use of the following software packages
 ## Reading List
 
 There is a course reading list under the ReadingLists@UCL facilty which can be accessed here: (https://ucl.rl.talis.com/modules/casa0014.html)
+
+We also have a collection of "social links" that are stored on Pinboard at https://pinboard.in/u:dunc/t:CASA0014/ - these will slowly grow over time and we love receiving suggestions so please do post interesting links in the module slack channel.
