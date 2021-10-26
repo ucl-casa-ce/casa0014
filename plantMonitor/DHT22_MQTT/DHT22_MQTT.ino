@@ -30,11 +30,23 @@ DHT dht(DHTPin, DHTTYPE);   // Initialize DHT sensor.
 
 // Wifi and MQTT
 #include "arduino_secrets.h" 
-///////please enter your sensitive data in the Secret tab/arduino_secrets.h
+/*
+**** please enter your sensitive data in the Secret tab/arduino_secrets.h
+**** using format below
+
+#define SECRET_SSID "ssid name"
+#define SECRET_PASS "ssid password"
+#define SECRET_MQTTUSER "user name - eg student"
+#define SECRET_MQTTPASS "password";
+ */
+
 const char* ssid     = SECRET_SSID;
 const char* password = SECRET_PASS;
+const char* mqttuser = SECRET_MQTTUSER;
+const char* mqttpass = SECRET_MQTTPASS;
+
 ESP8266WebServer server(80);
-const char* mqtt_server = "bats.cetools.org";
+const char* mqtt_server = "mqtt.cetools.org";
 WiFiClient espClient;
 PubSubClient client(espClient);
 long lastMsg = 0;
@@ -47,16 +59,20 @@ Timezone GB;
 
 
 void setup() {
-  // declare the built in LED and turn it off
-  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output
-  digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
+  // Set up LED to be controllable via broker
+  // Initialize the BUILTIN_LED pin as an output
+  // Turn the LED off by making the voltage HIGH
+  pinMode(BUILTIN_LED, OUTPUT);     
+  digitalWrite(BUILTIN_LED, HIGH);  
 
+  // Set up the outputs to control the soil sensor
+  // switch and the blue LED for status indicator
   pinMode(sensorVCC, OUTPUT); 
   digitalWrite(sensorVCC, LOW);
   pinMode(blueLED, OUTPUT); 
   digitalWrite(blueLED, HIGH);
 
-  // open serial connection
+  // open serial connection for debug info
   Serial.begin(115200);
   delay(100);
 
@@ -64,12 +80,13 @@ void setup() {
   pinMode(DHTPin, INPUT);
   dht.begin();
 
+  // run initialisation functions
   startWifi();
   startWebserver();
   syncDate();
 
   // start MQTT server
-  client.setServer(mqtt_server, 1883);
+  client.setServer(mqtt_server, 1884);
   client.setCallback(callback);
 
 }
@@ -149,19 +166,19 @@ void sendMQTT() {
   snprintf (msg, 50, "%.1f", Temperature);
   Serial.print("Publish message for t: ");
   Serial.println(msg);
-  client.publish("plant/minty/temperature", msg);
+  client.publish("student/CASA0014/plant/ucxxxxx/temperature", msg);
 
   Humidity = dht.readHumidity(); // Gets the values of the humidity
   snprintf (msg, 50, "%.0f", Humidity);
   Serial.print("Publish message for h: ");
   Serial.println(msg);
-  client.publish("plant/minty/humidity", msg);
+  client.publish("student/CASA0014/plant/ucxxxxx/humidity", msg);
 
   //Moisture = analogRead(soilPin);   // moisture read by readMoisture function
   snprintf (msg, 50, "%.0i", Moisture);
   Serial.print("Publish message for m: ");
   Serial.println(msg);
-  client.publish("plant/minty/moisture", msg);
+  client.publish("student/CASA0014/plant/ucxxxxx/moisture", msg);
 
 }
 
@@ -191,13 +208,12 @@ void reconnect() {
     // Create a random client ID
     String clientId = "ESP8266Client-";
     clientId += String(random(0xffff), HEX);
-    // Attempt to connect
-    if (client.connect(clientId.c_str())) {
+    
+    // Attempt to connect with clientID, username and password
+    if (client.connect(clientId.c_str(), mqttuser, mqttpass)) {
       Serial.println("connected");
-      // Once connected, publish an announcement...
-      client.publish("plant/minty/outTopic", "hello world");
       // ... and resubscribe
-      client.subscribe("plant/minty/inTopic");
+      client.subscribe("student/CASA0014/plant/ucxxxxx/inTopic");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());

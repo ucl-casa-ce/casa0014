@@ -68,6 +68,4 @@ void loop() {
     Serial.print(line);
   }
   
-  Serial.println();
-  Serial.println("closing connection");
 }

@@ -6,14 +6,26 @@
  */
 
 #include <ESP8266WiFi.h>
-#include <ezTime.h>
 #include <PubSubClient.h>
 
-const char* ssid     = "enter SSID";
-const char* password = "enter password";
-const char* mqtt_server = "enter mqtt url";
+// Wifi and MQTT
+#include "arduino_secrets.h" 
+/*
+**** please enter your sensitive data in the Secret tab/arduino_secrets.h
+**** using format below
 
-Timezone GB;
+#define SECRET_SSID "ssid name"
+#define SECRET_PASS "ssid password"
+#define SECRET_MQTTUSER "user name - eg student"
+#define SECRET_MQTTPASS "password";
+ */
+
+const char* ssid     = SECRET_SSID;
+const char* password = SECRET_PASS;
+const char* mqttuser = SECRET_MQTTUSER;
+const char* mqttpass = SECRET_MQTTPASS;
+
+const char* mqtt_server = "mqtt.cetools.org";
 
 WiFiClient espClient;
 PubSubClient client(espClient);
@@ -23,30 +35,38 @@ int value = 0;
 
 void setup() {
   
-  pinMode(BUILTIN_LED, OUTPUT);     // Initialize the BUILTIN_LED pin as an output 
-  digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
-  // open serial connection
-  Serial.begin(115200);
-  delay(100);
+  // We setup an LED to be controllable via MQTT
+  // Initialize the BUILTIN_LED pin as an output 
+  // Turn the LED off by making the voltage HIGH
+  pinMode(BUILTIN_LED, OUTPUT);     
+  digitalWrite(BUILTIN_LED, HIGH);  
 
+  // open serial connection via the wifi to the mqtt broker
+  Serial.begin(115200);
+  delay(100); // to give time for the serial connection to open
+
+  // Initiate the connecting to wifi routine
   startWifi();
 
-  // get real date and time
-  waitForSync();
-  Serial.println("UTC: " + UTC.dateTime()); 
-  GB.setLocation("Europe/London");
-  Serial.println("London time: " + GB.dateTime());  
-
-  client.setServer(mqtt_server, 1883);
+  // Once connected to wifi establish connection to mqtt broker
+  client.setServer(mqtt_server, 1884);
+  
+  // The callback in this case listens for instructions to 
+  // change the state of the LED - here we are initialising 
+  // that function
   client.setCallback(callback);
 
 }
 
 void loop() {
   delay(5000);
-  //Serial.println(GB.dateTime("H:i:s")); // UTC.dateTime("l, d-M-y H:i:s.v T")
   sendMQTT();
 }
+
+
+// This function is used to set-up the connection to the wifi
+// using the user and passwords defined in the secrets file
+// It then prints the connection status to the serial monitor
 
 void startWifi(){
   // We start by connecting to a WiFi network
@@ -66,6 +86,38 @@ void startWifi(){
   Serial.println(WiFi.localIP());
 }
 
+// This function is used to make sure the arduino is connected
+// to an MQTT broker before it tries to send a message and to 
+// keep alive subscriptions on the broker (ie listens for inTopic)
+
+void reconnect() {
+  // Loop until we're reconnected
+  while (!client.connected()) {    // while not (!) connected....
+    Serial.print("Attempting MQTT connection...");
+    // Create a random client ID
+    String clientId = "ESP8266Client-";
+    clientId += String(random(0xffff), HEX);
+    
+    // Attempt to connect
+    if (client.connect(clientId.c_str(), mqttuser, mqttpass)) {
+      Serial.println("connected");
+      // ... and subscribe to messages on broker
+      client.subscribe("student/CASA0014/plant/ucjtdjw/inTopic");
+    } else {
+      Serial.print("failed, rc=");
+      Serial.print(client.state());
+      Serial.println(" try again in 5 seconds");
+      // Wait 5 seconds before retrying
+      delay(5000);
+    }
+  }
+}
+
+// This function sends (publishes) a message to a MQTT topic
+// once a connection is established with the broker. It sends
+// an incrementing variable called value to the topic:
+// "student/CASA0014/plant/ucjtdjw"
+
 void sendMQTT() {
 
   if (!client.connected()) {
@@ -76,8 +128,14 @@ void sendMQTT() {
   snprintf (msg, 50, "hello world #%ld", value);
   Serial.print("Publish message: ");
   Serial.println(msg);
-  client.publish("test", msg);
+  client.publish("student/CASA0014/plant/ucjtdjw", msg);
+
 }
+
+// The callback function is called when an incoming message is received
+// from the MQTT broker (ie the inTopic message)/ In this demo if the first
+// character of the message has the value "1" we turn an LED on. Any other value 
+// results in the LED being turned off
 
 void callback(char* topic, byte* payload, unsigned int length) {
   Serial.print("Message arrived [");
@@ -88,7 +146,7 @@ void callback(char* topic, byte* payload, unsigned int length) {
   }
   Serial.println();
 
-  // Switch on the LED if an 1 was received as first character
+    // Switch on the LED if an 1 was received as first character
   if ((char)payload[0] == '1') {
     digitalWrite(BUILTIN_LED, LOW);   // Turn the LED on (Note that LOW is the voltage level
     // but actually the LED is on; this is because it is active low on the ESP-01)
@@ -96,28 +154,4 @@ void callback(char* topic, byte* payload, unsigned int length) {
     digitalWrite(BUILTIN_LED, HIGH);  // Turn the LED off by making the voltage HIGH
   }
 
-}
-
-void reconnect() {
-  // Loop until we're reconnected
-  while (!client.connected()) {
-    Serial.print("Attempting MQTT connection...");
-    // Create a random client ID
-    String clientId = "ESP8266Client-";
-    clientId += String(random(0xffff), HEX);
-    // Attempt to connect
-    if (client.connect(clientId.c_str())) {
-      Serial.println("connected");
-      // Once connected, publish an announcement...
-      client.publish("outTopic", "hello world");
-      // ... and resubscribe
-      client.subscribe("inTopic");
-    } else {
-      Serial.print("failed, rc=");
-      Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(5000);
-    }
-  }
 }
