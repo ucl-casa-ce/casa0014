@@ -147,13 +147,6 @@ void syncDate() {
   Serial.println("London time: " + GB.dateTime());
 
 }
-void startWebserver() {
-  // when connected and IP address obtained start HTTP server
-  server.on("/", handle_OnConnect);
-  server.onNotFound(handle_NotFound);
-  server.begin();
-  Serial.println("HTTP server started");
-}
 
 void sendMQTT() {
 
