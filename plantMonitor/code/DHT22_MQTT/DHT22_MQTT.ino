@@ -82,7 +82,7 @@ void setup() {
 
   // run initialisation functions
   startWifi();
-  startWebserver();
+  //startWebserver();
   syncDate();
 
   // start MQTT server
@@ -112,8 +112,6 @@ void readMoisture(){
   delay(100);
   // read the value from the sensor:
   Moisture = analogRead(soilPin);         
-  //Moisture = map(analogRead(soilPin), 0,320, 0, 100);    // note: if mapping work out max value by dipping in water     
-  //stop power 
   digitalWrite(sensorVCC, LOW);  
   digitalWrite(blueLED, HIGH);
   delay(100);
