@@ -69,7 +69,7 @@ Quik-Tech (UK)
 
 ![Quik-tech pcb costs for 50](/plantMonitor/assets/pcbQuik.png)
 
-JCL (US)
+JCL (HK from US)
 
 ![JCL pcb costs for 50](/plantMonitor/assets/pcbJCL.png)
 
