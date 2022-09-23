@@ -82,7 +82,7 @@ void setup() {
 
   // run initialisation functions
   startWifi();
-  //startWebserver();
+  startWebserver();
   syncDate();
 
   // start MQTT server
@@ -157,19 +157,19 @@ void sendMQTT() {
   snprintf (msg, 50, "%.1f", Temperature);
   Serial.print("Publish message for t: ");
   Serial.println(msg);
-  client.publish("student/CASA0014/plant/ucxxxxx/temperature", msg);
+  client.publish("student/CASA0014/plant/ucxxxxx2/temperature", msg);
 
   Humidity = dht.readHumidity(); // Gets the values of the humidity
   snprintf (msg, 50, "%.0f", Humidity);
   Serial.print("Publish message for h: ");
   Serial.println(msg);
-  client.publish("student/CASA0014/plant/ucxxxxx/humidity", msg);
+  client.publish("student/CASA0014/plant/ucxxxxx2/humidity", msg);
 
   //Moisture = analogRead(soilPin);   // moisture read by readMoisture function
   snprintf (msg, 50, "%.0i", Moisture);
   Serial.print("Publish message for m: ");
   Serial.println(msg);
-  client.publish("student/CASA0014/plant/ucxxxxx/moisture", msg);
+  client.publish("student/CASA0014/plant/ucxxxxx2/moisture", msg);
 
 }
 
@@ -204,7 +204,7 @@ void reconnect() {
     if (client.connect(clientId.c_str(), mqttuser, mqttpass)) {
       Serial.println("connected");
       // ... and resubscribe
-      client.subscribe("student/CASA0014/plant/ucxxxxx/inTopic");
+      client.subscribe("student/CASA0014/plant/ucxxxxx2/inTopic");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
@@ -213,6 +213,14 @@ void reconnect() {
       delay(5000);
     }
   }
+}
+
+void startWebserver() {
+  // when connected and IP address obtained start HTTP server  
+  server.on("/", handle_OnConnect);
+  server.onNotFound(handle_NotFound);
+  server.begin();
+  Serial.println("HTTP server started");  
 }
 
 void handle_OnConnect() {
