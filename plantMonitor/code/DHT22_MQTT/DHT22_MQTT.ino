@@ -157,19 +157,19 @@ void sendMQTT() {
   snprintf (msg, 50, "%.1f", Temperature);
   Serial.print("Publish message for t: ");
   Serial.println(msg);
-  client.publish("student/CASA0014/plant/ucxxxxx2/temperature", msg);
+  client.publish("student/CASA0014/plant/ucjtdjw/temperature", msg);
 
   Humidity = dht.readHumidity(); // Gets the values of the humidity
   snprintf (msg, 50, "%.0f", Humidity);
   Serial.print("Publish message for h: ");
   Serial.println(msg);
-  client.publish("student/CASA0014/plant/ucxxxxx2/humidity", msg);
+  client.publish("student/CASA0014/plant/ucjtdjw/humidity", msg);
 
   //Moisture = analogRead(soilPin);   // moisture read by readMoisture function
   snprintf (msg, 50, "%.0i", Moisture);
   Serial.print("Publish message for m: ");
   Serial.println(msg);
-  client.publish("student/CASA0014/plant/ucxxxxx2/moisture", msg);
+  client.publish("student/CASA0014/plant/ucjtdjw/moisture", msg);
 
 }
 
@@ -204,7 +204,7 @@ void reconnect() {
     if (client.connect(clientId.c_str(), mqttuser, mqttpass)) {
       Serial.println("connected");
       // ... and resubscribe
-      client.subscribe("student/CASA0014/plant/ucxxxxx2/inTopic");
+      client.subscribe("student/CASA0014/plant/ucjtdjw/inTopic");
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
