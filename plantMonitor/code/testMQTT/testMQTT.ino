@@ -1,11 +1,7 @@
 /*
- *  Simple test to push data to an MQTT server - uses library from https://pubsubclient.knolleary.net
+ *  Simple test to read data from an MQTT server - uses library from https://pubsubclient.knolleary.net
  *  Duncan Wilson 
- *  CASA0014 - 2 - Plant Monitor Workshop
- *  May 2020
- *  
- *  
- *  
+ *  Jan 2023
  *  
  */
 
@@ -26,8 +22,6 @@
 
 const char* ssid     = SECRET_SSID;
 const char* password = SECRET_PASS;
-const char* mqttuser = SECRET_MQTTUSER;
-const char* mqttpass = SECRET_MQTTPASS;
 
 const char* mqtt_server = "mqtt.cetools.org";
 

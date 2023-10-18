@@ -9,7 +9,7 @@
 #include <Adafruit_NeoPixel.h>
 
 // Data Pin for NeoPixels?
-#define PIN        6
+#define PIN        4
 
 // How many NeoPixels are attached to the Arduino?
 #define NUMPIXELS 12 // we are using a 12 LED RGBW NeoPixel

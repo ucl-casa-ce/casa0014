@@ -29,14 +29,8 @@ WiFiClient wificlient;
 #define DHTTYPE DHT22   // DHT 22  (AM2302), AM2321
 
 // Sensors - DHT22 and Nails
-uint8_t DHTPin = 12;        // on Pin 2 of the Huzzah
-uint8_t soilPin = 0;      // ADC or A0 pin on Huzzah
-float Temperature;
-float Humidity;
-int Moisture = 1; // initial value just in case web page is loaded before readMoisture called
 int sensorVCC = 13;
 int blueLED = 2;
-DHT dht(DHTPin, DHTTYPE);   // Initialize DHT sensor.
 
 
 

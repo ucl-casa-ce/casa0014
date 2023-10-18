@@ -7,9 +7,10 @@
 
 #include <ESP8266WiFi.h>
 
-const char* ssid     = "SSID here";
-const char* password = "password here";
+const char* ssid     = "xxx";
+const char* password = "xxx";
 const char* host = "iot.io";
+
 
 void setup() {
   Serial.begin(115200);
@@ -51,7 +52,7 @@ void loop() {
   }
   
   // We now create a URI for the request
-  String url = "/data/index.html";
+  String url = "/index.html";
   Serial.print("Requesting URL: ");
   Serial.println(host + url);
   
@@ -67,5 +68,7 @@ void loop() {
     String line = client.readStringUntil('\r');
     Serial.print(line);
   }
+
+  delay(1000000);
   
 }
