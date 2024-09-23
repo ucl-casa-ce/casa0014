@@ -6,15 +6,9 @@ This corner of the CASA0014 repository contains 2 projects:
 - Chrono Lumina - a MQTT controlled NeoPixel ring using an ESP32 board
 - LED finder - a device for publishing messages via MQTT to Chrono Lumina
 
-<<<<<<< Updated upstream
-Arduino code in this [folder](d1miniesp32/d1mini_esp32_S3_zero_neopixel). Sketch uses same message structure as v1 so can be tested with same HTML page. 
-
-Info on the [Waveshare ESP32 C3 Zero](https://www.waveshare.com/esp32-c3-zero.htm) and in the [docs folder](docs/).
-=======
 These repositories contain examples of the work in progress in developing these devices. 
 
 The folders are:
->>>>>>> Stashed changes
 
 - [Live version of CELab Chrono Lumina - */d1miniesp32/d1mini_esp32_S3_zero_neopixel*](/d1miniesp32/d1mini_esp32_S3_zero_neopixel/)
 - [Live version of LED finder - */LEDfinder/LEDfinder-esp32c3*](/LEDfinder/LEDfinder-esp32c3/)
