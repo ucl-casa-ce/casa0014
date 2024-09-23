@@ -5,9 +5,9 @@ LED Neopixel Ring controlled via MQTT. Created for CASA0014 project work / teach
 
 ## v2 - ESP32 C3
 
-Arduino code in this [folder](d1miniesp32/). Sketch uses same message structure as v1 so can be tested with same HTML page. 
+Arduino code in this [folder](d1miniesp32/d1mini_esp32_S3_zero_neopixel). Sketch uses same message structure as v1 so can be tested with same HTML page. 
 
-Info on the [Waveshare ESP32 C3 Zero](https://www.waveshare.com/esp32-c3-zero.htm).
+Info on the [Waveshare ESP32 C3 Zero](https://www.waveshare.com/esp32-c3-zero.htm) and in the [docs folder](/docs/).
 
 ### Controlling via MQTT
 NeoPixels are controlled via MQTT. Each Arduino is numbered 1 to 50 and listens for messages on a topic with the following structure:
