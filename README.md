@@ -11,7 +11,7 @@ Internet of Things, Connected Environments, Prototypying, Living Labs
 
 This repo is being used to share materials used in the workshop component of the module. Some overview information is below but the key items are:
 
-- [2024/25 code repository example for Chrono Lumina](/chronoLumina/)
+- [2024/25 code repository example for Chrono Lumina](/chronoLumina/readme.md)
 
 - pre 2024 workshop - [blinking monster](/blinkingMonster/)
 
