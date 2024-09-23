@@ -12,7 +12,7 @@ The folders are:
 
 - [Live version of CELab Chrono Lumina - */d1miniesp32/d1mini_esp32_S3_zero_neopixel*](d1miniesp32/d1mini_esp32_S3_zero_neopixel/)
 - [Live version of LED finder - */LEDfinder/LEDfinder-esp32c3*](LEDfinder/LEDfinder-esp32c3/)
-- Development versions of [LED finder using MKR1010](LEDfinder/)
+- Development versions of [LED finder and background info](LEDfinder/)
 - An early version using [ESP8266](d1mini8266/)
 - [Docs](docs/) contains useful docs for the ESP32 from waveshare
 - [html](html/) contains a sample page for controlling chrono lumina via a webpage
