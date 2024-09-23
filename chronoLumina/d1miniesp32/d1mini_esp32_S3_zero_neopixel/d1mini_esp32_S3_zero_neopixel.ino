@@ -1,5 +1,6 @@
 // Duncan Wilson June 2024 - v1 - MQTT controlled NeoPixel Ring
-// Steven Gray - August 20224 - v1.1 - WebBluetooth Additions
+// Steven Gray - August 2024 - v1.1 - WebBluetooth Additions
+// Duncan Wilson - September 2024 - v1.2 - uploaded to 50 ESP32-C3-Zero devices for CASA0014
 
 // works with ESP32-S3-Zero and 12 Neopixel ring
 // https://www.waveshare.com/wiki/ESP32-S3-Zero 
