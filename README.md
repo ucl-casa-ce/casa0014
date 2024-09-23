@@ -9,9 +9,11 @@ Internet of Things, Connected Environments, Prototypying, Living Labs
 
 ## What is in the CASA0014 GitHub repository?
 
-This repo is being used to share materials used in the workshop component of the module. Some overview information is below but the key items are:
+This repo is being used to share materials used in the workshop component of the module. Some overview information is below but the key item is:
 
 - [2024/25 code repository example for Chrono Lumina](/chronoLumina/readme.md)
+
+But for posterity we have also kept the old workshops for extra curricula activity!
 
 - pre 2024 workshop - [blinking monster](/blinkingMonster/)
 
