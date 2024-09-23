@@ -7,6 +7,16 @@ An introduction to building the internet of things for people and the environmen
 ## Keywords
 Internet of Things, Connected Environments, Prototypying, Living Labs
 
+## What is in the CASA0014 GitHub repository?
+
+This repo is being used to share materials used in the workshop component of the module. Some overview information is below but the key items are:
+
+- [2024/25 code repository example for Chrono Lumina](/chronoLumina/)
+
+- pre 2024 workshop - [blinking monster](/blinkingMonster/)
+
+- pre 2024 workshop - [plant monitor](/plantMonitor/)
+
 ## Module Aims and Objectives
 
 After having taking this module, you will develop skills in three key areas and should be able to:
@@ -28,22 +38,6 @@ Collaboration
 
 In addition, you will establish a shared ‘connected environment’ that you will curate throughout the programme.
 
-## Module Delivery
-
-This modules runs twice per week during the first half of term one (10 sessions in total). Each module will typically consist of a one hour lecture introducing key concepts and ideas followd by a two hour practical session where students  work through practical exercises designed to familiarise them with software and hardware being used. An extra 10-15 hours per week of self-guided learning is recommened during the module, with a subsequent 50-70 hours devoted to coursework and assesment preperation. 
-
-## Topics covered
-
-  1. Introduction to Connected Environments
-  2. Hello Monster Design Brief - [the repo for this project is linked here](https://github.com/ucl-casa-ce/casa0014/tree/main/blinkingMonster)
-  5. Hello Monster Crit
-  6. Living Lab Walkshop
-  7. Anatomy of an IoT system I
-  8. Anatomy of an IoT system II
-  9. Plant Monitor I  - [the repo for this project is linked here](https://github.com/ucl-casa-ce/casa0014/tree/main/plantMonitor)
-  10. Plant Monitor II
-  11. IoT Platforms
-  12. Future IoT 
   
 ## Software
 
@@ -59,8 +53,6 @@ The course will make heavy use of the following software packages
     - and there are a few other open source [GUI Clients here](https://git-scm.com/download/gui/windows)
 
 
-## Reading List
+## Main Module Information
 
-There is a course reading list under the ReadingLists@UCL facilty which can be accessed here: (https://ucl.rl.talis.com/modules/casa0014.html)
-
-We also have a collection of "social links" that are stored on Pinboard at https://pinboard.in/u:dunc/t:CASA0014/ - these will slowly grow over time and we love receiving suggestions so please do post interesting links in the module slack channel.
+All the week by week information is over on [Moodle](https://moodle.ucl.ac.uk/course/view.php?id=45126)
