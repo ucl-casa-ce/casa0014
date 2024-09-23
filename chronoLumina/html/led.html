@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>LED MQTT Picker</title>
+    </head>
+    <body>
+
+<!-- Note: this html / js below is missing the standard html / head / body tags -->
+
+<script src="/assets/js/paho-mqtt-min.js"></script>
+
+<h2>Testing Neopixel from web colour pickers</h2>
+<!-- this text will update depending on the value in the dropdown -->
+<p id="mqttTopic">Connecting to "student/CASA0014/light/1/pixel/"</p>
+
+<!-- This form displays if the user does not have the MQTT password saved in localstore -->
+<div id="passwordForm" style="display:none;">
+    <form id="passwordSetForm">
+      <label for="password">Password:</label>
+      <input type="password" id="password" name="password">
+      <input type="submit" value="Set Password">
+    </form>
+</div>
+
+<!-- the div displays the colour pickers -->
+<div id="colorPickers">
+<!-- Color pickers will be dynamically added here -->
+</div>
+
+<!-- drop down menu to select which ring you are sending data to -->
+<!-- it gets updated in script below to add in 39 more numbers to menu -->
+<select id="neopixelid">
+    <!-- Default option -->
+    <option value="1" selected>1</option>
+</select>
+
+<!-- these are teh buttons to take action the LED colour picker -->
+<button onclick="sendColors()">Send Colors</button>
+<button onclick="setRandomColors()">Random Colors</button>
+<button onclick="setGradient()">Gradient (Red to Green)</button>
+<button onclick="clearColors()">Clear Colors</button>
+<button onclick="sendAllColors()">Send All Colors</button> 
+
+<!-- this div is used to show the message being sent to MQTT -->
+<div ID="mqtt_message"></div>
+
+
+<script>
+    // Get a reference to the dropdown element
+    var dropdown = document.getElementById("neopixelid");
+
+    // Loop from 2 to 40 and create options
+    for (var i = 2; i <= 40; i++) {
+        var option = document.createElement("option");
+        option.text = i;
+        option.value = i;
+        dropdown.appendChild(option);
+    }
+
+    // Get references to the dropdown and paragraph elements
+    var mqttTopic = document.getElementById("mqttTopic");
+  
+    // Function to update the paragraph text with the selected value
+    function updateMqttTopic() {
+      var selectedValue = neopixelid.value;
+      mqttTopic.textContent = 'Connecting to "student/CASA0014/light/' + selectedValue + '/pixel/"';
+    }
+  
+    // Call the function to update the paragraph text when the page loads
+    updateMqttTopic();
+  
+    // Add an event listener to the dropdown to update the paragraph text when the selection changes
+    dropdown.addEventListener("change", updateMqttTopic);
+
+    var mqttClient = null;
+
+    // Function to dynamically create color pickers
+    function createColorPickers() {
+        var colorPickersDiv = document.getElementById("colorPickers");
+
+        for (var i = 0; i < 12; i++) {
+        var colorPickerContainer = document.createElement("div"); // Container for color picker and payload display
+        colorPickerContainer.style.display = "flex"; // Use flexbox for layout
+
+        var label = document.createElement("label");
+        label.textContent = "Pixel " + i + ": ";
+        colorPickerContainer.appendChild(label);
+
+        var colorPicker = document.createElement("input");
+        colorPicker.type = "color";
+        colorPicker.id = "colorPicker" + i;
+        colorPickerContainer.appendChild(colorPicker);
+
+        var payloadDiv = document.createElement("div");
+        payloadDiv.id = "payload" + i;
+        payloadDiv.style.marginLeft = "10px"; // Add some spacing
+        colorPickerContainer.appendChild(payloadDiv);
+
+        colorPickersDiv.appendChild(colorPickerContainer);
+        colorPickersDiv.appendChild(document.createElement("br")); // Line break for spacing
+        }      
+    }
+
+    // ================================================
+    // FUNCTIONS FOR SENDING COLOURS IN PAYLOAD ONE AT A TIME
+
+    // Function to send colors to MQTT broker
+    function sendColors() {
+        if (!mqttClient || !mqttClient.isConnected()) {
+        mqttConnectAndSendColors();
+        } else {
+        sendColorsToBroker();
+        }
+    }
+
+    // Function to send colors to MQTT broker after connecting
+    function mqttConnectAndSendColors() {
+        var password = localStorage.getItem('mqttPassword') || ""; // Get password from localStorage
+        mqttClient = new Paho.MQTT.Client("mqtt.cetools.org", Number(8091), "clientId_" + parseInt(Math.random() * 100, 10));
+        var mqttOptions = {
+        userName: "student",
+        password: password,
+        onSuccess: function() {
+            sendColorsToBroker();
+        },
+        useSSL: true // Enable SSL/TLS encryption
+        };
+        mqttClient.connect(mqttOptions);
+    }
+
+    // Function to send colors to MQTT broker
+    function sendColorsToBroker() {
+        var neopixelvalue = document.getElementById("neopixelid").value;
+        for (var i = 0; i < 12; i++) {
+        var colorPicker = document.getElementById("colorPicker" + i);
+        var colorHex = colorPicker.value.substring(1); // remove '#'
+        var R = parseInt(colorHex.substring(0, 2), 16);
+        var G = parseInt(colorHex.substring(2, 4), 16);
+        var B = parseInt(colorHex.substring(4, 6), 16);
+        sendColor(neopixelvalue, i, R, G, B);
+        }
+    }
+
+    // Function to send color to MQTT broker
+    function sendColor(neoring, pixelId, R, G, B) {
+        var message = {
+        "pixelid": pixelId,
+        "R": R,
+        "G": G,
+        "B": B,
+        "W": 0
+        };
+        
+        var topic = "student/CASA0014/light/" + neoring + "/pixel/";
+
+        var messageProperties = {
+            retain: true // Set retain flag to true so if arduino resets it will pick up last value
+        };
+
+        var payloadDiv = document.getElementById("payload" + pixelId);
+        payloadDiv.textContent = "Payload sent: " + JSON.stringify(message); // Display payload
+
+        mqttSend(topic, JSON.stringify(message));
+    }
+
+    // ================================================
+    // FUNCTIONS FOR SENDING ALL COLOURS IN ONE PAYLOAD
+
+    // Function to send all colors to MQTT broker
+    function sendAllColors() {
+        if (!mqttClient || !mqttClient.isConnected()) {
+        mqttConnectAndSendAllColors();
+        } else {
+        sendAllColorsToBroker();
+        }
+    }
+
+    // Function to send all colors to MQTT broker after connecting
+    function mqttConnectAndSendAllColors() {
+        var password = localStorage.getItem('mqttPassword') || ""; // Get password from localStorage
+        mqttClient = new Paho.MQTT.Client("mqtt.cetools.org", Number(8091), "clientId_" + parseInt(Math.random() * 100, 10)); // Use port 8094 for encrypted connection
+        var mqttOptions = {
+        userName: "student",
+        password: password,
+        onSuccess: function() {
+            sendAllColorsToBroker();
+        },
+        useSSL: true // Enable SSL/TLS encryption
+        };
+        mqttClient.connect(mqttOptions);
+    }
+
+    function sendAllColorsToBroker() {
+        var allColors = []; // Array to hold all 12 sets of RGBW values
+        
+        var neopixelvalue = document.getElementById("neopixelid").value;
+
+        // Loop through each color picker to collect RGBW values
+        for (var i = 0; i < 12; i++) {
+            var colorPicker = document.getElementById("colorPicker" + i);
+            var colorHex = colorPicker.value.substring(1); // remove '#'
+            var R = parseInt(colorHex.substring(0, 2), 16);
+            var G = parseInt(colorHex.substring(2, 4), 16);
+            var B = parseInt(colorHex.substring(4, 6), 16);
+
+            // Add RGBW values to the array
+            allColors.push({
+                "pixelid": i,
+                "R": R,
+                "G": G,
+                "B": B,
+                "W": 0 // Assuming W value is always 0 for all colors
+            });
+        }
+
+        var topic = "student/CASA0014/light/" + neopixelvalue + "/all/";
+
+        // Construct MQTT message payload with all colors
+        var message = {
+            "allLEDs" : allColors
+        };
+
+        // Convert the message to JSON string
+        var messageString = JSON.stringify(message);
+
+        // Display payload (optional)
+        var payloadDiv = document.getElementById("mqtt_message");
+        payloadDiv.textContent = "Payload sent: " + messageString;
+
+        // Send MQTT message with the payload
+        mqttSend(topic, messageString);
+    }
+
+    // Check if password is set locally
+    function isPasswordSetLocally() {
+        return localStorage.getItem('mqttPassword') !== null;
+    }
+
+    // Function to show color pickers
+    function showColorPickers() {
+        document.getElementById("colorPickers").style.display = "block";
+    }
+
+    // Function to initialize the page
+    function initializePage() {
+        if (!isPasswordSetLocally()) {
+            // Password is not set, show password form
+            document.getElementById("passwordForm").style.display = "block";
+        } else {
+            // Password is set, show color pickers
+            createColorPickers();
+        }
+    }
+
+    // Function to set random colors for all color pickers
+    function setRandomColors() {
+        for (var i = 0; i < 12; i++) {
+        var colorPicker = document.getElementById("colorPicker" + i);
+        var randomColor = '#' + Math.floor(Math.random()*16777215).toString(16); // Generate random hex color
+        colorPicker.value = randomColor;
+        }
+    }
+
+    // Function to set random colors for all color pickers
+    function clearColors() {
+        for (var i = 0; i < 12; i++) {
+            var colorPicker = document.getElementById("colorPicker" + i);
+            colorPicker.value = 0;
+        }
+    }
+
+    // Function to set gradient from red to green for all color pickers
+    function setGradient() {
+        var red = 255;
+        var green = 0;
+        
+        for (var i = 0; i < 12; i++) {
+        var colorPicker = document.getElementById("colorPicker" + i);
+        var colorHex = rgbToHex(red, green, 0);
+        colorPicker.value = colorHex;
+        
+        // Interpolate colors between red and green
+        red -= 255 / 11;
+        green += 255 / 11;
+        }
+    }
+
+    // Function to convert RGB to hexadecimal color code
+    function rgbToHex(r, g, b) {
+        return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+    }    
+
+
+    // Function to send MQTT message
+    function mqttSend(topic, message) {
+        if (mqttClient && mqttClient.isConnected()) {
+
+            //mqttClient.send(topic, message, true);
+            var mqttMessage = new Paho.MQTT.Message(message);
+            mqttMessage.destinationName = topic;
+            message.retained = true;
+            mqttClient.send(mqttMessage);
+        }
+    }
+
+    // Function to handle form submission for setting password
+    document.getElementById("passwordSetForm").addEventListener("submit", function(event) {
+        event.preventDefault();
+        var password = document.getElementById("password").value;
+        localStorage.setItem('mqttPassword', password); // Save password locally
+        createColorPickers(); // Show color pickers after setting the password
+    });
+
+    // Call initializePage() when the page loads
+    window.onload = initializePage;
+
+</script>
+
+    </body>
+</html>
