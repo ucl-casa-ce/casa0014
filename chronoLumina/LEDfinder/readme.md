@@ -27,6 +27,8 @@ Which then allowed me to start iterating through designs in Fusion 360 for an en
 
 <a data-flickr-embed="true" href="https://www.flickr.com/photos/pseudonomad/54016480715/in/album-72177720320549464" title="flashing all lights"><img src="https://live.staticflickr.com/31337/54016480715_1586592ee5_c.jpg" width="100%" alt="flashing all lights"/></a>
 
-<a data-flickr-embed="true" href="https://www.flickr.com/photos/pseudonomad/54031574406/in/album-72177720321469614" title="Lumina Selector - Final Prototype"><img src="https://live.staticflickr.com/31337/54031574406_09f7017604_c.jpg" width="800" height="450" alt="Lumina Selector - Final Prototype"/></a><script async src="//embedr.flickr.com/assets/client-code.js" charset="utf-8"></script>
+A video of the final operational prototype is on flickr:
+
+<a data-flickr-embed="true" href="https://www.flickr.com/photos/pseudonomad/54031574406/in/album-72177720321469614" title="Lumina Selector - Final Prototype"><img src="https://live.staticflickr.com/31337/54031574406_09f7017604_c.jpg" width="800" height="450" alt="Lumina Selector - Final Prototype"/></a>
 
 Development photos are on: [Flickr in an Album called Lumina Selector](https://www.flickr.com/photos/pseudonomad/albums/72177720321469614/)
