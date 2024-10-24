@@ -81,6 +81,11 @@ Magnetic switch to power cycle them - take stick
 ![](QEOP%20Walkshop/Image%2020211012%20220933.jpeg)
 
 -----
+
+**UHI sensor on the way back - near copper box**
+
+Mandy's PhD project - LoRaWAN Heat Sensor: This sensor monitors air temperature and humidity every 5 minutes to assess London’s Urban Heat Islands and Heatwave. Powered by NiMH batteries and solar panel, it is low cost- lightweight and self managing with data sent using the LoRaWAN network. It has been deployed with both the Greater London Authority and SHIFT to aid the creation of a citywide microclimate network for climate mitigation planning by identifying hotspots and cool zones across London.
+
 **Near water over carpenters road bridge**
 
 Water quality sensor
