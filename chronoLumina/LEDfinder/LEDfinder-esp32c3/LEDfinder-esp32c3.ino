@@ -37,7 +37,7 @@ int _pauseLength = 25000;
 int _fastIncrement = 10;
 
 volatile int counter = 1;
-int upperlimit = 50;
+int upperlimit = 53;
 int lowerlimit = 0;
 
 // Structure to store circle information
@@ -162,21 +162,33 @@ void sendmqtt(int LEDring){
     
       String message = "{\"method\": \"pulsewhite\"}";
 
-      if (client.publish(mqtt_topic_demo, message.c_str(), message.length())) {
+      if (client.publish(mqtt_topic_demo, message.c_str(), message.length(), false)) {
         Serial.println("Message published");
       } else {
         Serial.println("Failed to publish message");
       }
 
     }
+  }else if(LEDring > 52){
+    for(int i = 1; i <= upperlimit; i++){
+      sprintf(mqtt_topic_demo, "student/CASA0014/light/%d/fire/", i);
+    
+      String message = "{\"spin\": \"50\"}";
 
+      if (client.publish(mqtt_topic_demo, message.c_str(), message.length(), false)) {
+        Serial.println("Message published");
+      } else {
+        Serial.println("Failed to publish message");
+      }
+
+    }
   }else{
 
     sprintf(mqtt_topic_demo, "student/CASA0014/light/%d/all/", LEDring);
   
     String message = "{\"method\": \"pulsewhite\"}";
 
-    if (client.publish(mqtt_topic_demo, message.c_str(), message.length())) {
+    if (client.publish(mqtt_topic_demo, message.c_str(), message.length(), false)) {
       Serial.println("Message published");
     } else {
       Serial.println("Failed to publish message");
@@ -307,7 +319,7 @@ void startWifi(){
   displaywifititle();
   display.display(); // Update the display
   
-
+  Serial.println(WiFi.macAddress());
 
 
   // Function for connecting to a WiFi network
@@ -368,7 +380,6 @@ void startWifi(){
 
   LedGreen(); // all good so show green for go
 }
-
 
 void reconnectMQTT() {
   if (WiFi.status() != WL_CONNECTED){
