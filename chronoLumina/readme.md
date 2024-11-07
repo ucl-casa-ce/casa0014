@@ -8,6 +8,8 @@ This corner of the CASA0014 repository contains 2 projects:
 
 These repositories contain examples of the work in progress in developing these devices. 
 
+Information on how to [access the lumina lights is described in the API.md file](api.md)
+
 The folders are:
 
 - [Live version of CELab Chrono Lumina - */d1miniesp32/d1mini_esp32_S3_zero_neopixel*](d1miniesp32/d1mini_esp32_S3_zero_neopixel/)
