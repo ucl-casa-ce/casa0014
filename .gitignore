@@ -20,3 +20,5 @@ arduino_secrets.h
 /test.md
 /password.md
 .theia
+luminaire/test-sketches/python-publish-colour/.env
+/chronoLumina/d1miniesp32/wifi-import-chronolumina.csv
