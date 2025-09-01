@@ -31,7 +31,7 @@ WiFiClient mkrClient;
 PubSubClient client(mkrClient);
 
 // edit this for the light you are connecting to
-char mqtt_topic_demo[] = "student/CASA0014/light/1/pixel/";
+char mqtt_topic_demo[] = "student/CASA0014/light/2/pixel/";
 
 void setup() {
   // Start the serial monitor to show output
@@ -64,7 +64,10 @@ void loop() {
   sendmqtt();
 
   Serial.println("sent a message");
-  delay(10000);
+  delay(2000);
+  sendmqttClearAll();
+  delay(2000);
+  
   
 }
 
@@ -72,17 +75,38 @@ void sendmqtt(){
 
   // send a message to update the light
   char mqtt_message[100];
-  sprintf(mqtt_message, "{\"pixelid\": %d, \"R\": 0, \"G\": 200, \"B\": 128, \"W\": 20}", 2);
-  Serial.println(mqtt_topic_demo);
-  Serial.println(mqtt_message);
+
+  for (int i = 0; i < 12; ++i){
+    sprintf(mqtt_message, "{\"pixelid\": %d, \"R\": 0, \"G\": 200, \"B\": 128, \"W\": 0}", i);
+    Serial.println(mqtt_message);
   
-  if (client.publish(mqtt_topic_demo, mqtt_message)) {
-    Serial.println("Message published");
-  } else {
-    Serial.println("Failed to publish message");
+    if (client.publish(mqtt_topic_demo, mqtt_message)) {
+      Serial.println("Message published");
+    } else {
+      Serial.println("Failed to publish message");
+    }
   }
 
 }
+
+void sendmqttClearAll(){
+
+  // send a message to update the light
+  char mqtt_message[100];
+
+  for (int i = 0; i < 12; ++i){
+    sprintf(mqtt_message, "{\"pixelid\": %d, \"R\": 0, \"G\": 0, \"B\": 0, \"W\": 0}", i);
+    Serial.println(mqtt_message);
+  
+    if (client.publish(mqtt_topic_demo, mqtt_message)) {
+      Serial.println("Message published");
+    } else {
+      Serial.println("Failed to publish message");
+    }
+  }
+
+}
+
 
 void startWifi(){
     
@@ -182,3 +206,5 @@ void callback(char* topic, byte* payload, int length) {
   Serial.println();
 
 }
+
+

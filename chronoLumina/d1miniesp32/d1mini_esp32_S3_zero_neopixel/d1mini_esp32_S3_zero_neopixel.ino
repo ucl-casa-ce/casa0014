@@ -24,7 +24,7 @@
 // USER SET VARIABLE FOR EACH DEPLOYMENT START
 // Each device should connect to the feed that belongs to it
 // e.g. light/1/ or light/2/ etc.
-String lightId = "45"; // Or get this value from a sensor, user input, etc.
+String lightId = "46"; // Or get this value from a sensor, user input, etc.
 // USER SET VARIABLE FOR EACH DEPLOYMENT END
 
 // BLE Libraries - Make sure ArduinoBLE is NOT installed (conflicts)
@@ -559,6 +559,7 @@ void startWifi(){
     // then connect to wifi
     for (int i = 0; i < n; ++i){
       // Primary network
+      Serial.println(WiFi.SSID(i));
       if (WiFi.SSID(i) == ssid) {
         Serial.print("Connecting to ");
         Serial.println(ssid);
