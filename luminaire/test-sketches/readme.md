@@ -6,5 +6,5 @@
 
 - mkr1010-test-MQTT.ino - basic sketch to test out MQTT connection driving LED'S
 
-- python-publish-colour/send-colour.py
+- python-publish-colour/send-colour.py - this is a test script that sends colour changes via MQTT
 
