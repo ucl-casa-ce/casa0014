@@ -11,8 +11,13 @@ Internet of Things, Connected Environments, Prototypying, Living Labs
 
 This repo is being used to share materials used in the workshop component of the module. Some overview information is below but the key items are:
 
-- [Week 2 - 2024/25 code repository example WebLED](/webled/)
-- [Week 5 - 2024/25 code repository example for Chrono Lumina](/chronoLumina/readme.md)
+- links to workshop materials will appear here
+
+- links to workshop materials will appear here
+
+- links to workshop materials will appear here
+
+...
 
 But for posterity we have also kept the old workshops for extra curricula activity!
 
@@ -20,7 +25,7 @@ But for posterity we have also kept the old workshops for extra curricula activi
 
 - pre 2024 workshop - [plant monitor](/2023plantMonitor/)
 
-- 2024 workshop - [Chrono Lumina](/2024chronolumina/)
+- 2024 workshop - [Chrono Lumina](/2024chronoLumina/)
 
 - 2024 workshop - [Web LED](/2024webled/)
 
