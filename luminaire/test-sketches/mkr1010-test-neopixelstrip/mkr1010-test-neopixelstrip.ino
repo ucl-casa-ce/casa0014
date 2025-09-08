@@ -1,7 +1,7 @@
 #include <Adafruit_NeoPixel.h>
 
 #define NEOPIXEL_PIN 6
-#define NUMPIXELS 4
+#define NUMPIXELS 31
 
 int red, blue, green = 0;
 
@@ -20,15 +20,15 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(NUMPIXELS, NEOPIXEL_PIN, NEO_GRB + 
 
 void setup() {
   pixels.begin();           // INITIALIZE NeoPixel strip object (REQUIRED)
-  pixels.setBrightness(50); // Set BRIGHTNESS to about 1/5 (max = 255)
+  pixels.setBrightness(250); // Set BRIGHTNESS to about 1/5 (max = 255)
   pixels.show();            // Turn OFF all pixels ASAP
 }
 
 void loop() {
-  colorWipe(pixels.Color(255, 0, 0), 200); // Red
-  colorWipe(pixels.Color(0, 255, 0), 200); // Green
-  colorWipe(pixels.Color(0, 0, 255), 200); // Blue
-  colorWipe(pixels.Color(255, 255, 255), 200); // Blue
+  colorWipe(pixels.Color(255, 0, 0), 100); // Red
+  colorWipe(pixels.Color(0, 255, 0), 100); // Green
+  colorWipe(pixels.Color(0, 0, 255), 100); // Blue
+  colorWipe(pixels.Color(255, 255, 255), 100); // Blue
   //colorWipe(pixels.Color(0, 0, 0, 255), 20); // White RGBW
   //rainbowCycle(20);
 }

@@ -16,9 +16,13 @@ This repo is being used to share materials used in the workshop component of the
 
 But for posterity we have also kept the old workshops for extra curricula activity!
 
-- pre 2024 workshop - [blinking monster](/blinkingMonster/)
+- pre 2024 workshop - [blinking monster](/2023blinkingMonster/)
 
-- pre 2024 workshop - [plant monitor](/plantMonitor/)
+- pre 2024 workshop - [plant monitor](/2023plantMonitor/)
+
+- 2024 workshop - [Chrono Lumina](/2024chronolumina/)
+
+- 2024 workshop - [Web LED](/2024webled/)
 
 ## Module Aims and Objectives
 
