@@ -2,7 +2,7 @@
 
 ## Summary
 
-An introduction to building the internet of things for people and the environment. In this module students will be introduced to concepts and technologies underpinning connected environments and the role technology can play in trying to measure and understand the built and natural world. Through a series of practical workshop sessions students will be introduced to IoT prototyping tools, existing sensor systems in UCL East and the Queen Elizabeth Olympic Park and will build a simple sensor system to monitor the environment for the duration of their course.
+An introduction to building the internet of things for people and the environment. In this module students will be introduced to concepts and technologies underpinning connected environments and the role technology can play in trying to measure and understand the built and natural world. Through a series of practical workshop sessions students will be introduced to IoT prototyping tools, existing sensor systems in UCL East and the Queen Elizabeth Olympic Park and will build a simple sensor system to explore end to end IoT systems.
 
 ## Keywords
 Internet of Things, Connected Environments, Prototypying, Living Labs
