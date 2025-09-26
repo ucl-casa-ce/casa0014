@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luminaire Color Grid</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+            background-color: #141414;
+            color: #ece8e8;
+        }
+
+        h1 {
+            color: #ece8e8;
+        }
+
+        .controls {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #topic-select {
+            padding: 8px;
+            font-size: 16px;
+        }
+
+        .grid-container {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-template-rows: repeat(6, 1fr);
+            gap: 5px;
+            width: 90%;
+            max-width: 1200px;
+            aspect-ratio: 2 / 1;
+            background-color: #2d2a2a;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(214, 213, 213, 0.1);
+        }
+
+        .square {
+            width: 100%;
+            padding-top: 100%; /* Creates a square element */
+            background-color: #000000;
+            border-radius: 4px;
+            transition: background-color 0.3s ease;
+            position: relative; /* Make the square a positioning context for the number */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .square-number {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 10px; /* Adjust as needed */
+            color: white;
+            text-shadow: 1px 1px 2px black; /* For better visibility */
+            font-weight: bold;
+        }
+
+        .hide-numbers .square-number {
+            display: none;
+        }
+    </style> 
+</head>
+<body>
+    <div class="controls">
+        <h1>Luminaire Color Grid</h1>
+        <!--<label for="topic-select">Select Topic:</label>-->
+        <select id="topic-select"></select>
+        <button id="toggle-numbers-btn">Hide Numbers</button>
+    </div>
+    
+    <!-- This div contains all the squares which change dynamically via the scripts -->
+    <div id="grid-container" class="grid-container"></div>
+
+    <!-- Load up the MQTT library so that we can connect to the broker and dynamically get data -->
+    <!-- the cloudfare version did not work for me when testing on local server
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.1.0/paho-mqtt.min.js"></script>
+    -->
+    <script src="paho-mqtt.js" type="text/javascript"></script>
+    
+    <!-- The script section sets up the grid of squares, the mqtt connection and then listens for updates -->
+    <script>
+        // Wait until the entire structure of the web page is ready to be manipulated, 
+        // and then run the JavaScript code 
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // Paho MQTT client variables
+            var brokerHost = 'mqtt.cetools.org';
+            var brokerPort = 8081; // Port for WebSocket connections
+            var clientId = 'lumi-web-' + Math.random().toString(36).substr(2, 8); // Random alphanumeric string of length 8
+            var options = {mqttVersion: 4};
+            var mqttClient;
+            var topic = 'student/CASA0014/luminaire/';
+            var currentTopic = 'student/CASA0014/luminaire/0';
+
+            // Get references to DOM elements
+            const gridContainer = document.getElementById('grid-container');
+            const topicSelect = document.getElementById('topic-select');
+            const totalSquares = 72; // 12 columns * 6 rows
+            const numCols = 12;
+            const numRows = 6;
+
+            // --- Setup the dropdown menu (0-40) ---
+            for (let i = 0; i <= 40; i++) {
+                const option = document.createElement('option');
+                option.value = i;
+                option.textContent = `${topic}${i}`;
+                topicSelect.appendChild(option);
+            }
+            topicSelect.value = '0'; // Set default selected value
+
+            // --- Create the 12x6 grid of squares ---
+            for (let i = 0; i < totalSquares; i++) {
+                const square = document.createElement('div');
+                square.classList.add('square');
+
+                // Calculate the row and column based on the horizontal index 'i'
+                const row = Math.floor(i / numCols);
+                const col = i % numCols;
+
+                // Calculate the new vertical-first index 'j'
+                const j = col * numRows + row;
+
+                // Create a new span element for the number
+                const numberSpan = document.createElement('span');
+                numberSpan.classList.add('square-number');
+                numberSpan.textContent = j; // Assign the number based on the loop index
+
+                // Append the number to the square
+                square.appendChild(numberSpan);
+                
+                gridContainer.appendChild(square);
+            }
+            const squares = document.querySelectorAll('.square'); // List of all squares
+
+            // --- Toggle button to show/hide numbers ---
+            const toggleBtn = document.getElementById('toggle-numbers-btn');
+            const body = document.body;
+            toggleBtn.addEventListener('click', () => {
+                // Toggle the 'hide-numbers' class on the body
+                body.classList.toggle('hide-numbers');
+
+                // Change the button text based on the current state
+                if (body.classList.contains('hide-numbers')) {
+                    toggleBtn.textContent = 'Show Numbers';
+                } else {
+                    toggleBtn.textContent = 'Hide Numbers';
+                }
+            });
+
+            // Create an MQTT client instance
+            mqttClient = new Paho.MQTT.Client('wss://' + brokerHost + ':' + brokerPort + '/mqtt', clientId);
+
+            // MQTT client event handlers
+            mqttClient.onConnected = function (reconnect, uri) {
+                console.log('Connected to MQTT broker.');
+                mqttClient.subscribe(currentTopic);
+            };
+
+            // Callback when connection is successful
+            mqttClient.onConnectionLost = onConnectionLost;
+            mqttClient.onMessageArrived = onMessageArrived;
+
+            // Set MQTT client options
+            mqttClient.connect(options);
+
+            function onConnectionLost(responseObject) {
+                if (responseObject.errorCode !== 0) {
+                    console.log('Connection lost: ' + responseObject.errorMessage);
+                }
+            }
+        
+            // --- MQTT message handler ---
+            function onMessageArrived(message) {
+                // console.log("Message arrived: " + message.payloadBytes);
+                // Check if the message is for the current topic
+                if (message.destinationName === currentTopic) {
+                    // the payload is an array of bytes, each set of 3 bytes represents RGB values for one square
+                    const payload = message.payloadBytes;
+                    // loop through the payload bytes in steps of 3 (R, G, B)
+                    // and update the corresponding square's background color
+                    
+                    // this version numbers the squares "horizontally" left to right, top to bottom
+//                    for (let i = 0; i < totalSquares; i++) {
+//                        const r = payload[i * 3];
+//                        const g = payload[i * 3 + 1];
+//                        const b = payload[i * 3 + 2];
+//                        const color = `rgb(${r}, ${g}, ${b})`;
+//                        squares[i].style.backgroundColor = color;
+//                    }
+
+                    // this version numbers the squares "vertically" top to bottom, left to right
+                    for (let col = 0; col < 12; col++) {
+                        for (let row = 0; row < 6; row++) {
+                            const index = col * 6 + row; // Calculate the index in the payload
+                            const r = payload[index * 3];
+                            const g = payload[index * 3 + 1];
+                            const b = payload[index * 3 + 2];
+                            const color = `rgb(${r}, ${g}, ${b})`;
+                            squares[row * 12 + col].style.backgroundColor = color; // Update the square's color
+                        }
+                    }
+                }
+            }
+
+            // --- Handle dropdown change events ---
+            topicSelect.addEventListener('change', (event) => {
+                const newTopicIndex = event.target.value;
+                const newTopic = `student/CASA0014/luminaire/${newTopicIndex}`;
+                
+                if (mqttClient.isConnected()) {
+                    console.log(`Unsubscribing from ${currentTopic}`);
+                    mqttClient.unsubscribe(currentTopic);
+                }
+                
+                currentTopic = newTopic;
+                
+                if (mqttClient.isConnected()) {
+                    console.log(`Subscribing to ${currentTopic}`);
+                    mqttClient.subscribe(currentTopic);
+                }
+            });
+
+
+        });
+    </script>
+</body>
+</html>

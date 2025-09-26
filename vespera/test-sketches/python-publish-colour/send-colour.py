@@ -12,7 +12,7 @@ import os # Import the os module to access environment variables
 # --- MQTT Configuration ---
 MQTT_BROKER = "mqtt.cetools.org" 
 MQTT_PORT = 1884
-MQTT_TOPIC = "student/CASA0014/luminaire"
+MQTT_TOPIC = "student/CASA0014/luminaire/1"
 CLIENT_ID = "Python_NeoPixel_Publisher"
 
 # Load MQTT username and password from environment variables
@@ -30,7 +30,7 @@ if not MQTT_USERNAME or not MQTT_PASSWORD:
     exit(1) # Exit the script if credentials are missing
 
 # --- NeoPixel Configuration ---
-NEOPIXEL_COUNT = 48
+NEOPIXEL_COUNT = 72
 BYTES_PER_LED = 3 # Red, Green, Blue
 PAYLOAD_LENGTH = NEOPIXEL_COUNT * BYTES_PER_LED # 48 * 3 = 144 bytes
 
@@ -89,6 +89,8 @@ def create_gradient_payload(start_rgb, end_rgb):
         g = int(start_g + (end_g - start_g) * ratio)
         b = int(start_b + (end_b - start_b) * ratio)
 
+        print(f"LED {i}: R={r} G={g} B={b}") # Debug print for each LED's color
+
         payload[i * BYTES_PER_LED] = r
         payload[i * BYTES_PER_LED + 1] = g
         payload[i * BYTES_PER_LED + 2] = b
@@ -146,16 +148,32 @@ def main():
     # Start the MQTT client loop in a non-blocking way
     client.loop_start()
 
+    # print("\nSetting all pixels to off (000000)...")
+    # off_payload = create_solid_color_payload(0, 0, 0)
+    # client.publish(MQTT_TOPIC, off_payload, qos=0)
+
     print("\n--- Sending Test Payloads ---")
 
-    # Example 6: Random colors for each LED
-    print("\nSetting random red for each pixel (5 updates)...")
-    for _ in range(50):
-        random_payload = create_random_red_payload()
-        client.publish(MQTT_TOPIC, random_payload, qos=0)
-        time.sleep(0.1) # Faster updates for animation effect
+    # Example 1: Set all pixels to solid Red
+    # print("\nSetting all pixels to RED (FF0000)...")
+    # red_payload = create_solid_color_payload(255, 0, 0)
+    # client.publish(MQTT_TOPIC, red_payload, qos=0)
+    # time.sleep(2) # Wait a bit to see the effect
+    # print(f"Last payload: ({red_payload})")
 
-    print(f"Last payload: ({random_payload})")
+    # Example 8: Green to Red Gradient fading in and out
+    for n in range(10):
+        
+        print("\nSetting a Green to Blue gradient...")
+        for i in range(50):
+            gradient_payload = create_gradient_payload((0, i*5, 0), (i*5, 0, 0))
+            client.publish(MQTT_TOPIC, gradient_payload, qos=0)
+            time.sleep(0.1)
+        for i in range(50):
+            colour = 255-(i*5)
+            gradient_payload = create_gradient_payload((0, colour, 0), (colour, 0, 0))
+            client.publish(MQTT_TOPIC, gradient_payload, qos=0)
+            time.sleep(0.1)
 
     print("\nFinished sending test payloads. Disconnecting...")
     client.loop_stop() # Stop the loop

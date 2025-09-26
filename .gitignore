@@ -22,3 +22,4 @@ arduino_secrets.h
 .theia
 luminaire/test-sketches/python-publish-colour/.env
 /chronoLumina/d1miniesp32/wifi-import-chronolumina.csv
+vespera/test-sketches/python-publish-colour/.env

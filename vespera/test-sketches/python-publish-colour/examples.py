@@ -1,3 +1,6 @@
+# These are all example code snippets that can be copid into the file "send-colour.py"    
+
+
     # Example 1: Set all pixels to solid Red
     print("\nSetting all pixels to RED (FF0000)...")
     red_payload = create_solid_color_payload(255, 0, 0)
@@ -35,9 +38,9 @@
         client.publish(MQTT_TOPIC, random_payload, qos=0)
         time.sleep(0.5) # Faster updates for animation effect
 
-    # Example 7: Green to Blue Gradient
+    # Example 7: Green to Red Gradient
     print("\nSetting a Green to Blue gradient...")
-    gradient_payload = create_gradient_payload((0, 255, 0), (0, 0, 255))
+    gradient_payload = create_gradient_payload((0, 255, 0), (255, 0, 0))
     client.publish(MQTT_TOPIC, gradient_payload, qos=0)
     time.sleep(2)
 
