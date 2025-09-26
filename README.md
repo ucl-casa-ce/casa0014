@@ -11,11 +11,10 @@ Internet of Things, Connected Environments, Prototypying, Living Labs
 
 This repo is being used to share materials used in the workshop component of the module. Some overview information is below but the key items are:
 
-- links to workshop materials will appear here
+- links to [Vespera project folder](vespera)
 
 - links to workshop materials will appear here
 
-- links to workshop materials will appear here
 
 ...
 
