@@ -13,8 +13,7 @@ This repo is being used to share materials used in the workshop component of the
 
 - links to [Vespera project folder](vespera)
 
-- links to workshop materials will appear here
-
+- workshop - [Web LED](/webled/)
 
 ...
 
@@ -25,8 +24,6 @@ But for posterity we have also kept the old workshops for extra curricula activi
 - pre 2024 workshop - [plant monitor](/2023plantMonitor/)
 
 - 2024 workshop - [Chrono Lumina](/2024chronoLumina/)
-
-- 2024 workshop - [Web LED](/2024webled/)
 
 ## Module Aims and Objectives
 
