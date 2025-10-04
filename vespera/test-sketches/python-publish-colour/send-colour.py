@@ -12,7 +12,7 @@ import os # Import the os module to access environment variables
 # --- MQTT Configuration ---
 MQTT_BROKER = "mqtt.cetools.org" 
 MQTT_PORT = 1884
-MQTT_TOPIC = "student/CASA0014/luminaire/1"
+MQTT_TOPIC = "student/CASA0014/luminaire/0"
 CLIENT_ID = "Python_NeoPixel_Publisher"
 
 # Load MQTT username and password from environment variables

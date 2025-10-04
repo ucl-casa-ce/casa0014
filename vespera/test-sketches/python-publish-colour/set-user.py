@@ -22,7 +22,7 @@ CLIENT_ID = "Python_Luminaire_Set_User"
 
 
 
-user_id = 1 # Change this to the desired user ID (0-255)
+user_id = 0 # Change this to the desired user ID (0-255)
 
 
 
