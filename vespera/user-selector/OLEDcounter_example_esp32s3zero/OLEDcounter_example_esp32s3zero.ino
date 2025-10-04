@@ -1,3 +1,12 @@
+/* 
+Pinout diagram: https://www.espboards.dev/esp32/esp32-s3-zero/
+
+gnd to gnd
+vdd to 3.3v
+SDA to 8
+SCK to 9
+*/
+
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h> // Note when using the adafruit examples i needed to change the address to 0x3C
@@ -7,11 +16,16 @@ Adafruit_SSD1306 display(128, 64); // dimensions of OLED display in pixels
 int counter = 0;
 
 void setup() {
-  Wire.begin(8,9);  // SDA 2, SCL 3
+  // Use the default I2C pins for the ESP32-S3-Zero
+  // SDA: GPIO 8, SCL: GPIO 9
+  Wire.begin(8,9); 
   display.begin(SSD1306_SWITCHCAPVCC, 0x3C); // these amazon screens are different address to adafruit ones
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
+  // Start the serial monitor to show output
+  Serial.begin(115200);
+  Serial.print("Setup");
 }
 
 void loop() {
@@ -21,6 +35,7 @@ void loop() {
 
   delay(100); // Adjust delay for desired update rate
   counter++;
+  Serial.println(counter);
 
   // Reset counter if it reaches 100
   if (counter >= 51) {
