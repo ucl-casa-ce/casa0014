@@ -2,9 +2,6 @@
 
 // works with MKR1010
 
-//***********************************************************************************************
-// make sure to select USB CDC boot to enabled in tools menu
-//***********************************************************************************************
 #include <SPI.h>
 #include <WiFiNINA.h>
 #include <PubSubClient.h>
@@ -50,7 +47,7 @@ byte RGBpayload[payload_size];
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial); // Wait for serial port to connect (useful for debugging)
+  //while (!Serial); // Wait for serial port to connect (useful for debugging)
   Serial.println("Vespera");
 
 
@@ -93,14 +90,10 @@ void loop() {
     send_all_off();
     delay(100);
     send_RGB_to_pixel(0,250,0,n);
-    delay(500);
+    delay(200);
   }
 
-  delay(2000);
-
-
-
-
+  delay(1000);
 }
 
 // Function to update the R, G, B values of a single LED pixel

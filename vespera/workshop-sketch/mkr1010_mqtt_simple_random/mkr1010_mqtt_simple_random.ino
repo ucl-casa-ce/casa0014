@@ -33,7 +33,7 @@ WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 
 // Make sure to update your lightid value below with the one you have been allocated
-String lightId = "1"; // the topic id number or user number being used.
+String lightId = "0"; // the topic id number or user number being used.
 
 // Here we define the MQTT topic we will be publishing data to
 String mqtt_topic = "student/CASA0014/luminaire/" + lightId;            
@@ -50,7 +50,7 @@ byte RGBpayload[payload_size];
 
 void setup() {
   Serial.begin(115200);
-  while (!Serial); // Wait for serial port to connect (useful for debugging)
+  //while (!Serial); // Wait for serial port to connect (useful for debugging)
   Serial.println("Vespera");
 
 
