@@ -30,10 +30,12 @@ const int mqtt_port = 1883;                                // Default MQTT port 
 const char* mqtt_client_id = "MKR1010_NeoPixel_Luminaire"; // Unique client ID for your device
 const char* mqtt_subscribe_topic = "student/CASA0014/luminaire/#"; // Topic to subscribe to
 const char* user_update_topic = "student/CASA0014/luminaire/user";
+const char* brightness_update_topic = "student/CASA0014/luminaire/brightness";
 
 // --- Use this variable to see if we should change lights or not
 // --- Defaults to 0 - staff user - on start up
 int LUMINAIRE_USER = 0;
+int LUMINAIRE_BRIGHTNESS = 150;
 
 // --- NeoPixel Configuration ---
 #define NEOPIXEL_PIN 6
@@ -71,7 +73,7 @@ void setup() {
   // Initialize NeoPixels
   pixels.begin(); // Initialize the NeoPixel library
   pixels.show();  // Turn all pixels off initially
-  pixels.setBrightness(50); // Set a default brightness (0-255) to avoid blinding light
+  pixels.setBrightness(LUMINAIRE_BRIGHTNESS); // Set a default brightness (0-255) to avoid blinding light
 
   // Set the MQTT server and callback function
   mqttClient.setServer(mqtt_server, mqtt_port);
@@ -158,10 +160,10 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   payload_str[length] = '\0'; 
   
   // Print the received message for debugging
-  Serial.print("Message received on topic: ");
-  Serial.println(topic);
-  Serial.print("Message: ");
-  Serial.println(payload_str);
+  //Serial.print("Message received on topic: ");
+  //Serial.println(topic);
+  //Serial.print("Message: ");
+  //Serial.println(payload_str);
 
   // 1. Check if the topic is for updating the LUMINAIRE_USER variable
   // strcmp returns 0 if the two strings are identical
@@ -175,7 +177,18 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
     Serial.print("LUMINAIRE_USER updated to: ");
     Serial.println(LUMINAIRE_USER);
 
-  } 
+  } else if (strcmp(topic, brightness_update_topic) == 0){
+    // Convert the string payload to an integer
+    int new_brightness_id = atoi(payload_str);
+    
+    // Update the global LUMINAIRE_USER variable
+    LUMINAIRE_BRIGHTNESS = new_brightness_id;
+    
+    Serial.print("LUMINAIRE_BRIGHTNESS updated to: ");
+    Serial.println(LUMINAIRE_BRIGHTNESS);  
+    pixels.setBrightness(LUMINAIRE_BRIGHTNESS); // Set a default brightness (0-255) to avoid blinding light
+  
+  }
   // 2. Check if the topic ends with the current LUMINAIRE_USER ID
   else {
     // Find the last '/' in the topic string to isolate the number
@@ -187,15 +200,15 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
       
       // Compare the extracted number with our current LUMINAIRE_USER
       if (topic_user_id == LUMINAIRE_USER) {
-        Serial.print("This message is for my luminaire (ID: ");
-        Serial.print(LUMINAIRE_USER);
-        Serial.println("). Processing payload...");
+        //Serial.print("This message is for my luminaire (ID: ");
+        //Serial.print(LUMINAIRE_USER);
+        //Serial.println("). Processing payload...");
         
         // Add your specific code to process the payload here.
         // For example, control a light or other component.
         // For now, we'll just print it.
-        Serial.print("Payload to process: ");
-        Serial.println(payload_str);
+        //Serial.print("Payload to process: ");
+        //Serial.println(payload_str);
 
 
         // Check if the payload length matches the expected length for all LEDs
@@ -215,22 +228,22 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
           }
           // Update the NeoPixels to show the new colors
           pixels.show();
-          Serial.println("NeoPixels updated!");
+          //Serial.println("NeoPixels updated!");
         } else {
-          Serial.print("Warning: Received payload length (");
-          Serial.print(length);
-          Serial.print(") does not match expected length (");
-          Serial.print(NEOPIXEL_DATA_LENGTH);
-          Serial.println(") for 48 RGB LEDs. Ignoring update.");
+          //Serial.print("Warning: Received payload length (");
+          //Serial.print(length);
+          //Serial.print(") does not match expected length (");
+          //Serial.print(NEOPIXEL_DATA_LENGTH);
+          //Serial.println(") for 48 RGB LEDs. Ignoring update.");
         }
 
 
 
 
       } else {
-        Serial.print("This message is for a different luminaire (ID: ");
-        Serial.print(topic_user_id);
-        Serial.println("). Ignoring.");
+       //Serial.print("This message is for a different luminaire (ID: ");
+        //Serial.print(topic_user_id);
+        //Serial.println("). Ignoring.");
       }
     }
   }
