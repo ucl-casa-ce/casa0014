@@ -20,6 +20,8 @@ Vespera (Arduino MKR1010): This is the central light installation. It receives R
 
 [![Vespera WIP](https://img.youtube.com/vi/PV-KKoTKw0o/0.jpg)](https://www.youtube.com/watch?v=PV-KKoTKw0o)
 
+<iframe width="560" height="315" src="https://www.youtube.com/embed/PV-KKoTKw0o?si=6wGDLrGF_G8w6cN5" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+
 Arduino Dial: This is a separate input device. It publishes a message to the MQTT broker that specifies which user's color message should be displayed on Vespera, effectively acting as a selection switch.
 
 Tilt Controller (Arduino Feather M0): This physical device is used to generate and send RGB color values to the MQTT broker. It publishes messages to topic `student/CASA0014/luminaire/0`.
