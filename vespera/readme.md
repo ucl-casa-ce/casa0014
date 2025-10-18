@@ -18,6 +18,8 @@ This system allows multiple devices to control the Vespera light installation re
 
 Vespera (Arduino MKR1010): This is the central light installation. It receives RGB color data via MQTT messages and uses this information to control its 72 NeoPixel LEDs. It subscribes to specific MQTT topics to receive its commands `student/CASA0014/luminaire/`. Note: the code on this device is shared for information but cannot be changed by students.
 
+<video src="https://youtu.be/PV-KKoTKw0o">
+
 Arduino Dial: This is a separate input device. It publishes a message to the MQTT broker that specifies which user's color message should be displayed on Vespera, effectively acting as a selection switch.
 
 Tilt Controller (Arduino Feather M0): This physical device is used to generate and send RGB color values to the MQTT broker. It publishes messages to topic `student/CASA0014/luminaire/0`.
