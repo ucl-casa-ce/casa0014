@@ -19,9 +19,11 @@ This system allows multiple devices to control the Vespera light installation re
 Vespera (Arduino MKR1010): This is the central light installation. It receives RGB color data via MQTT messages and uses this information to control its 72 NeoPixel LEDs. It subscribes to specific MQTT topics to receive its commands `student/CASA0014/luminaire/`. Note: the code on this device is shared for information but cannot be changed by students.
 
 [![Vespera WIP - YouTube](https://img.youtube.com/vi/R43nlz1R_b8/0.jpg)](https://www.youtube.com/watch?v=R43nlz1R_b8)
+
 Vespera - YouTube
 
 [![Vespera WIP - YouTube](https://img.youtube.com/vi/PV-KKoTKw0o/0.jpg)](https://www.youtube.com/watch?v=PV-KKoTKw0o)
+
 Vespera WIP - YouTube
 
 Arduino Dial: This is a separate input device. It publishes a message to the MQTT broker that specifies which user's color message should be displayed on Vespera, effectively acting as a selection switch.
@@ -38,19 +40,18 @@ MQTT Broker (mqtt.cetools.org): This is the central hub for all communication. I
 
 Web Visualise: A web-based interface that mimics the output sent to Vespera. It subscribes to the same MQTT topic and displays the color data in a browser, providing a visual representation of what Vespera would display. This means you can visualise the output of your Arduino device without needing access to Vespera - hence allowing you to all work in parallel. The code for the HTML / JS web interface tis shared for information but we do not anticipate you developing this as part of your course work.
 
+<a data-flickr-embed="true" href="https://www.flickr.com/photos/pseudonomad/54833004541/in/datetaken/" title="Lumi screenshot"><img src="https://live.staticflickr.com/65535/54833004541_699def0a90_c.jpg" width="100%" alt="Lumi screenshot"/></a>
+
 # How do I send messages to Vespera?
 The CASA0014 workshop walks through the steps needed to create your own arduino based controller to send messages to Vespera. 
 
 # How can I test my code on Vespera?
 Use the "Selector" dial to choose your user number (1-40, the allocations will be listed on Moodle). This will set the topic that Vespera is listening to. This means that only one user can control Vespera at any one time!
 
-
 # How can I test my code without Vespera?
 Use the web visualiser to see the output of your code. The web visualiser is a simple HTML / JS page that connects to the same MQTT broker as Vespera and displays the colour messages it receives. This means you can see the output of your code without needing access to Vespera - hence allowing you to all work in parallel.
 
-
 # MQTT payload design for the Luminaire
-
 In the `mqtt_callback` function of the Vespera code, the payload array contains the binary RGB values for each LED. Each LED's color is defined by three consecutive bytes: Red, Green, and Blue. The values for each color component range from 0 to 255.
 
 Here are some examples of what those r, g, and b byte values would represent:
