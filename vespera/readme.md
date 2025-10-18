@@ -18,13 +18,19 @@ This system allows multiple devices to control the Vespera light installation re
 
 Vespera (Arduino MKR1010): This is the central light installation. It receives RGB color data via MQTT messages and uses this information to control its 72 NeoPixel LEDs. It subscribes to specific MQTT topics to receive its commands `student/CASA0014/luminaire/`. Note: the code on this device is shared for information but cannot be changed by students.
 
-[![Vespera WIP](https://img.youtube.com/vi/PV-KKoTKw0o/0.jpg)](https://www.youtube.com/watch?v=PV-KKoTKw0o)
+[![Vespera WIP - YouTube](https://img.youtube.com/vi/R43nlz1R_b8/0.jpg)](https://www.youtube.com/watch?v=R43nlz1R_b8)
+Vespera - YouTube
 
-<iframe width="560" height="315" src="https://www.youtube.com/embed/PV-KKoTKw0o?si=6wGDLrGF_G8w6cN5" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>
+[![Vespera WIP - YouTube](https://img.youtube.com/vi/PV-KKoTKw0o/0.jpg)](https://www.youtube.com/watch?v=PV-KKoTKw0o)
+Vespera WIP - YouTube
 
 Arduino Dial: This is a separate input device. It publishes a message to the MQTT broker that specifies which user's color message should be displayed on Vespera, effectively acting as a selection switch.
 
+<a data-flickr-embed="true" href="https://www.flickr.com/photos/pseudonomad/54833222204" title="Vespera prototyping"><img src="https://live.staticflickr.com/65535/54833222204_283c09cdb1_c.jpg" width="100%" alt="Vespera prototyping"/></a>
+
 Tilt Controller (Arduino Feather M0): This physical device is used to generate and send RGB color values to the MQTT broker. It publishes messages to topic `student/CASA0014/luminaire/0`.
+
+<a data-flickr-embed="true" href="https://www.flickr.com/photos/pseudonomad/54801452011/in/datetaken/" title="Luminaire Controller CASA0014"><img src="https://live.staticflickr.com/65535/54801452011_7ed80419f4_c.jpg" width="100%" alt="Luminaire Controller CASA0014"/></a>
 
 Python Script: A software-based client that can also publish RGB color data to the same MQTT broker, allowing for automated or scripted control of the Vespera.
 
