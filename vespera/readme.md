@@ -10,6 +10,7 @@ Vespera is a WiFi-enabled luminaire that can be controlled via MQTT messages. It
 - [Test scripts](test-sketches) used during development
 - The [Vespera Arduino code](luminaire_mkr1010_controller/luminaire_mkr1010_controller.ino)
 - The Arduino code used for the [student selector](user-selector)
+- Lots of pictures on [Flickr](https://www.flickr.com/photos/pseudonomad/albums/72177720329476053/)
 
 # System Overview
 This system allows multiple devices to control the Vespera light installation remotely via MQTT. The core components are the Vespera light itself which is running on an Arduino MKR1010 and a separate Arduino-based dial that is used to define which topic Vespera should listen to. In addition a variety of interfaces have been created as demo examples of how to interface with the light - they include an Arduino Feather M0 tilt controller, some Python scripts and a web viewer to mimic the output sent to Vespera. All communication is routed through our MQTT broker (mqtt.cetools.org) over wifi.
