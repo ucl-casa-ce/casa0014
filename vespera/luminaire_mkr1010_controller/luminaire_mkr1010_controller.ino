@@ -48,6 +48,9 @@ WiFiClient wifiClient;
 PubSubClient mqttClient(wifiClient);
 Adafruit_NeoPixel pixels(NEOPIXEL_COUNT, NEOPIXEL_PIN, NEO_GRB + NEO_KHZ800);
 
+// --- Connection Recovery Variables ---
+unsigned long lastConnectionAttempt = 0;
+const long RECONNECT_INTERVAL_MS = 5000; // Try reconnecting every 5 seconds
 
 // --- Function Prototypes ---
 void setup_wifi();
@@ -84,6 +87,14 @@ void setup() {
 }
 
 void loop() {
+  // check to make sure wifi is connected, if not setup again
+  if (WiFi.status() != WL_CONNECTED) {
+    Serial.println("Wi-Fi is disconnected. Re-running setup_wifi...");
+    setup_wifi(); // This function already has the loop to wait for connection
+    // If setup_wifi() succeeds, it will fall through to MQTT check.
+    return; // Optionally return to start loop again immediately
+  }
+
   // Ensure MQTT connection is maintained
   if (!mqttClient.connected()) {
     reconnect_mqtt();
@@ -123,29 +134,31 @@ void setup_wifi() {
 
 // --- MQTT Reconnection Function ---
 void reconnect_mqtt() {
-  // Loop until we're reconnected
-  LedBlue();
-  while (!mqttClient.connected()) {
+  // Only attempt reconnection if the interval has passed
+  if (millis() - lastConnectionAttempt > RECONNECT_INTERVAL_MS) {
+    lastConnectionAttempt = millis();
+    // Loop until we're reconnected
+    LedBlue();
     Serial.print("Attempting MQTT connection...");
+
     // Attempt to connect with a unique client ID
     if (mqttClient.connect(mqtt_client_id)) {
       Serial.println("connected!");
       // Once connected, subscribe to the topic
       if (mqttClient.subscribe(mqtt_subscribe_topic)) {
-      Serial.print("Subscribed to topic: ");
-      Serial.println(mqtt_subscribe_topic);
+        Serial.print("Subscribed to topic: ");
+        Serial.println(mqtt_subscribe_topic);
       } else {
-      Serial.println("Failed to subscribe to topic!");
+        Serial.println("Failed to subscribe to topic!");
       }
+      LedGreen(); // Success!
     } else {
       Serial.print("failed, rc=");
       Serial.print(mqttClient.state());
-      Serial.println(" trying again in 5 seconds");
-      // Wait 5 seconds before retrying
-      delay(5000);
+      Serial.println(" Retrying in 5 seconds...");
+      LedRed(); // Still failing
     }
   }
-  LedGreen();
 }
 
 // --- MQTT Message Callback Function ---
