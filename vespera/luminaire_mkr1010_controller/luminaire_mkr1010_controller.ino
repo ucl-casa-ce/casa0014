@@ -27,8 +27,17 @@ int status = WL_IDLE_STATUS;     // the Wifi radio's status
 // Replace with your MQTT broker's IP address or hostname
 const char* mqtt_server = "mqtt.cetools.org";
 const int mqtt_port = 1883;                                // Default MQTT port (unsecured)
-const char* mqtt_client_id = "MKR1010_NeoPixel_Luminaire"; // Unique client ID for your device
-const char* mqtt_subscribe_topic = "student/CASA0014/luminaire/#"; // Topic to subscribe to
+const char* mqtt_client_id = "MKR1010_NeoPixel_Luminaire_Vespera"; // Unique client ID for your device
+
+// --- MQTT Topic Configuration ---
+// Base topic for the entire luminaire group
+const char* mqtt_base_topic = "student/CASA0014/luminaire";
+
+// The full topic string for THIS device's updates (will be generated dynamically)
+// Assuming user IDs are up to 4 digits, a length of 64 is safe.
+char mqtt_data_topic[64];
+
+// Fixed control topics
 const char* user_update_topic = "student/CASA0014/luminaire/user";
 const char* brightness_update_topic = "student/CASA0014/luminaire/brightness";
 
@@ -81,6 +90,12 @@ void setup() {
   // Set the MQTT server and callback function
   mqttClient.setServer(mqtt_server, mqtt_port);
   mqttClient.setCallback(mqtt_callback);
+
+  // Generate the initial data subscription topic ---
+  // Format: "student/CASA0014/luminaire/0"
+  snprintf(mqtt_data_topic, sizeof(mqtt_data_topic), "%s/%d", mqtt_base_topic, LUMINAIRE_USER);
+  Serial.print("Initial data topic set to: ");
+  Serial.println(mqtt_data_topic);
 
   // Connect to Wi-Fi
   setup_wifi();
@@ -144,14 +159,43 @@ void reconnect_mqtt() {
     // Attempt to connect with a unique client ID
     if (mqttClient.connect(mqtt_client_id)) {
       Serial.println("connected!");
-      // Once connected, subscribe to the topic
-      if (mqttClient.subscribe(mqtt_subscribe_topic)) {
-        Serial.print("Subscribed to topic: ");
-        Serial.println(mqtt_subscribe_topic);
+
+// Once connected, subscribe to all necessary topics
+      bool subscribed_ok = true;
+
+      // 1. Subscribe to the 'user' update topic
+      if (mqttClient.subscribe(user_update_topic)) {
+        Serial.print("Subscribed to user topic: ");
+        Serial.println(user_update_topic);
       } else {
-        Serial.println("Failed to subscribe to topic!");
+        Serial.println("Failed to subscribe to user topic!");
+        subscribed_ok = false;
       }
-      LedGreen(); // Success!
+      
+      // 2. Subscribe to the 'brightness' update topic
+      if (mqttClient.subscribe(brightness_update_topic)) {
+        Serial.print("Subscribed to brightness topic: ");
+        Serial.println(brightness_update_topic);
+      } else {
+        Serial.println("Failed to subscribe to brightness topic!");
+        subscribed_ok = false;
+      }
+
+      // 3. Subscribe to the device's specific data topic
+      if (mqttClient.subscribe(mqtt_data_topic)) {
+        Serial.print("Subscribed to data topic: ");
+        Serial.println(mqtt_data_topic);
+      } else {
+        Serial.println("Failed to subscribe to data topic!");
+        subscribed_ok = false;
+      }
+
+      if (subscribed_ok) {
+        LedGreen(); // Success!
+      } else {
+        LedRed(); // Failure!
+      }
+
     } else {
       Serial.print("failed, rc=");
       Serial.print(mqttClient.state());
@@ -181,15 +225,40 @@ void mqtt_callback(char* topic, byte* payload, unsigned int length) {
   // 1. Check if the topic is for updating the LUMINAIRE_USER variable
   // strcmp returns 0 if the two strings are identical
   if (strcmp(topic, user_update_topic) == 0) {
-    // Convert the string payload to an integer
     int new_user_id = atoi(payload_str);
     
-    // Update the global LUMINAIRE_USER variable
-    LUMINAIRE_USER = new_user_id;
-    
-    Serial.print("LUMINAIRE_USER updated to: ");
-    Serial.println(LUMINAIRE_USER);
+    // Only update if the user ID has actually changed
+    if (new_user_id != LUMINAIRE_USER) {
+      
+      // Unsubscribe from the OLD topic
+      Serial.print("Unsubscribing from old topic: ");
+      Serial.println(mqtt_data_topic);
+      mqttClient.unsubscribe(mqtt_data_topic);
 
+      // Update the global LUMINAIRE_USER variable
+      LUMINAIRE_USER = new_user_id;
+
+      // Generate the NEW topic string
+      snprintf(mqtt_data_topic, sizeof(mqtt_data_topic), "%s/%d", mqtt_base_topic, LUMINAIRE_USER);
+
+      // Subscribe to the NEW topic
+      if (mqttClient.subscribe(mqtt_data_topic)) {
+        Serial.print("Subscribed to NEW topic: ");
+        Serial.println(mqtt_data_topic);
+      } else {
+        Serial.println("Failed to subscribe to NEW topic!");
+      }
+      
+      Serial.print("LUMINAIRE_USER updated to: ");
+      Serial.println(LUMINAIRE_USER);
+
+      pixels.clear();
+      pixels.show();
+
+    } else {
+      Serial.println("LUMINAIRE_USER is already set to this ID. No change.");
+    } 
+    
   } else if (strcmp(topic, brightness_update_topic) == 0){
     // Convert the string payload to an integer
     int new_brightness_id = atoi(payload_str);
