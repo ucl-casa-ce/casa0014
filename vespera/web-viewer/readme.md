@@ -1,0 +1,1 @@
+Just double click on the index.html file on your local machine and it should open in your default browser. 
