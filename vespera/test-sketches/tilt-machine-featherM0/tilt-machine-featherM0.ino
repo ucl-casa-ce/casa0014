@@ -79,6 +79,7 @@ void setup() {
 
   // Set the MQTT server and callback function
   mqttClient.setServer(mqtt_server, mqtt_port);
+  mqttClient.setBufferSize(2048);
 
   // Connect to Wi-Fi
   setup_wifi();

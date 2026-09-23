@@ -1,61 +1,53 @@
-
-// Function to handle incoming MQTT messages
-void callback(char* topic, byte* payload, unsigned int length) {
-  Serial.print("Message received on topic: ");
-  Serial.println(topic);
-}
-
-
-// Connect wifi and get mac address for unique clientId and print out some setup info
-void startWifi(){
-  delay(10);
-  LedBlue(); // show Blue LED when looking for wifi
-  Serial.print("Connecting to WiFi: ");
+// Connect wifi and print setup info
+void startWifi() {
+  LedBlue(); // Show Blue LED when looking for wifi
+  Serial.print(F("Connecting to WiFi: "));
   Serial.println(ssid);
 
   // Check if the WiFi module is present
   if (WiFi.status() == WL_NO_MODULE) {
-    Serial.println("Communication with WiFi module failed!");
-    // Don't continue if module is not present
-    while (true);
+    Serial.println(F("Communication with WiFi module failed!"));
+    while (true)
+      ;
   }
 
-  // Attempt to connect to WiFi network
-  int status = WL_IDLE_STATUS;
-  while (status != WL_CONNECTED) {
-    status = WiFi.begin(ssid, password);
-    Serial.print(".");
-    delay(500);
+  // Attempt to connect to WiFi network (non-infinite loop to prevent lockup)
+  int attempts = 0;
+  while (WiFi.status() != WL_CONNECTED && attempts < 5) {
+    WiFi.begin(ssid, password);
+    Serial.print(F("."));
+    delay(3000);
+    attempts++;
   }
 
-  Serial.println("\nWiFi connected!");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
-
-  LedGreen(); // all good so show green for go 
+  if (WiFi.status() == WL_CONNECTED) {
+    Serial.println(F("\nWiFi connected!"));
+    Serial.print(F("IP address: "));
+    Serial.println(WiFi.localIP());
+    LedGreen(); // Green for connected
+  } else {
+    Serial.println(F("\nWiFi connection failed, will retry in loop."));
+    LedRed();
+  }
 }
 
-
-
-
-// handle reconnects to MQTT broker
+// Handle reconnects to MQTT broker
 void reconnectMQTT() {
-  // Loop until we're reconnected
   LedBlue();
-  while (!mqttClient.connected()) {
-    Serial.println("Connecting to MQTT...");
+  wifiClient.stop(); // Clean stale socket state before reconnecting
+
+  if (!mqttClient.connected()) {
+    Serial.println(F("Connecting to MQTT..."));
     if (mqttClient.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
-      Serial.println("connected");
-      // Subscribe to the topic you want to listen to
-      mqttClient.subscribe(mqtt_topic.c_str());
-      Serial.println("Subscribed to MQTT topics");
+      Serial.println(F("connected"));
+      LedGreen();
+      // NOTE: As a pure publisher, do NOT subscribe to mqtt_topic to avoid echo traffic doubling
     } else {
-      Serial.print("failed, rc=");
+      Serial.print(F("failed, rc="));
       Serial.print(mqttClient.state());
-      Serial.println(" try again in 5 seconds");
+      Serial.println(F(" try again in 5 seconds"));
+      LedRed();
       delay(5000);
     }
   }
-  LedGreen();
 }
-
