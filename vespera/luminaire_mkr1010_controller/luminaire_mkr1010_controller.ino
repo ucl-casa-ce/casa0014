@@ -3,7 +3,14 @@
 // payloads as RGB values for each LED.
 //
 // Enhanced with:
-// - Instant packet queue draining (eliminates 30-60s user change latency)
+// - Bounded packet queue draining to prevent CPU and watchdog starvation
+// - Dead socket / zombie connection recovery (detected via 30s status publish
+// verification)
+// - Hardware reset pulse (NINA_RESETN) for ESP32 co-processor recovery
+// - Immediate socket cleanup (wifiClient.stop) on reconnect failure to prevent
+// socket exhaustion
+// - Watchdog armed at first line of setup() to eliminate unrecoverable boot
+// deadlocks
 // - Authenticated MQTT connection (Port 1884 with credentials)
 // - SAMD21 Boot/Reset Reason diagnosis (BOD33 brownout, WDT watchdog, POR)
 // - SAMD21 Hardware Watchdog Timer (16s auto-recovery)
@@ -28,7 +35,8 @@
 
 ///////please enter your sensitive data in the Secret tab/arduino_secrets.h
 char ssid[] = SECRET_SSID; // your network SSID (name)
-char pass[] = SECRET_PASS; // your network password (use for WPA, or use as key for WEP)
+char pass[] =
+    SECRET_PASS; // your network password (use for WPA, or use as key for WEP)
 int status = WL_IDLE_STATUS; // the Wifi radio's status
 
 // --- MQTT Broker Configuration ---
@@ -36,13 +44,15 @@ const char *mqtt_server = "mqtt.cetools.org";
 const int mqtt_port = 1884; // Authenticated MQTT port
 const char *mqtt_username = SECRET_MQTTUSER;
 const char *mqtt_password = SECRET_MQTTPASS;
-const char *mqtt_client_id = "MKR1010_NeoPixel_Luminaire_Vespera"; // Unique client ID for your device
+const char *mqtt_client_id =
+    "MKR1010_NeoPixel_Luminaire_Vespera"; // Unique client ID for your device
 
 // --- MQTT Topic Configuration ---
 // Base topic for the entire luminaire group
 const char *mqtt_base_topic = "student/CASA0014/luminaire";
 
-// The full topic string for THIS device's updates (will be generated dynamically)
+// The full topic string for THIS device's updates (will be generated
+// dynamically)
 char mqtt_data_topic[64];
 
 // Fixed control & telemetry topics
@@ -55,7 +65,8 @@ const char *status_topic = "student/CASA0014/luminaire/status";
 int LUMINAIRE_USER = 0;
 int LUMINAIRE_BRIGHTNESS = 150;
 
-// Pending state change flags (processed safely in loop(), outside MQTT callback)
+// Pending state change flags (processed safely in loop(), outside MQTT
+// callback)
 volatile bool pendingUserChange = false;
 volatile int pendingUserId = 0;
 
@@ -75,7 +86,8 @@ byte ledDataBuffer[NEOPIXEL_DATA_LENGTH];
 volatile bool newPixelDataAvailable = false;
 
 // Frame-rate throttle: minimum time between pixels.show() calls (~33 FPS)
-// Prevents frequent interrupt disablement from corrupting WiFiNINA SPI transfers
+// Prevents frequent interrupt disablement from corrupting WiFiNINA SPI
+// transfers
 unsigned long lastPixelRender = 0;
 const unsigned long MIN_PIXEL_INTERVAL_MS = 30;
 
@@ -95,10 +107,17 @@ unsigned long totalMessagesReceived = 0;
 const unsigned long RECONNECT_INTERVAL_MS = 5000;
 const unsigned long WIFI_CHECK_INTERVAL_MS = 5000;
 const unsigned long HEARTBEAT_INTERVAL_MS = 10000; // Local serial log interval
-const unsigned long STATUS_PUBLISH_INTERVAL_MS = 60000; // MQTT network publish interval
+const unsigned long STATUS_PUBLISH_INTERVAL_MS =
+    30000; // MQTT network publish interval (30s keeps NAT/firewall tables
+           // active)
+
+// Consecutive MQTT failure tracker to detect zombie WiFi states
+int consecutiveMqttFailures = 0;
+const int MAX_MQTT_FAILURES_BEFORE_WIFI_RESET = 4;
 
 // --- Function Prototypes ---
 void setup_wifi();
+void hardResetWiFiModule();
 bool reconnect_mqtt();
 void mqtt_callback(char *topic, byte *payload, unsigned int length);
 void publish_status();
@@ -112,7 +131,10 @@ void watchdogSetup();
 void watchdogReset();
 
 void setup() {
-  // Initialize serial communication for debugging
+  // 1. Enable Hardware Watchdog FIRST before anything else (16s timeout)
+  watchdogSetup();
+
+  // 2. Initialize serial communication for debugging
   Serial.begin(115200);
 
   // Status RGB LED pins on MKR1010 NINA module
@@ -123,13 +145,17 @@ void setup() {
   LedRed(); // Board alive but not yet connected
 
   // Delay slightly to give Serial time to enumerate if USB monitor is opened
-  delay(1000);
+  for (int i = 0; i < 10; i++) {
+    watchdogReset();
+    delay(100);
+  }
 
   Serial.println(F("\n=================================================="));
   Serial.println(F("Starting MKR1010 NeoPixel MQTT Controller..."));
   Serial.println(F("=================================================="));
 
-  // Diagnostic: Report why the microcontroller reset (Brownout, Watchdog, Power, etc.)
+  // Diagnostic: Report why the microcontroller reset (Brownout, Watchdog,
+  // Power, etc.)
   printResetReason();
 
   Serial.print(F("Initial Free RAM: "));
@@ -148,17 +174,17 @@ void setup() {
   mqttClient.setServer(mqtt_server, mqtt_port);
   mqttClient.setCallback(mqtt_callback);
 
-  // Generate the initial data subscription topic: "student/CASA0014/luminaire/0"
-  snprintf(mqtt_data_topic, sizeof(mqtt_data_topic), "%s/%d", mqtt_base_topic, LUMINAIRE_USER);
+  // Generate the initial data subscription topic:
+  // "student/CASA0014/luminaire/0"
+  snprintf(mqtt_data_topic, sizeof(mqtt_data_topic), "%s/%d", mqtt_base_topic,
+           LUMINAIRE_USER);
   Serial.print(F("Initial data topic set to: "));
   Serial.println(mqtt_data_topic);
 
   // Connect to Wi-Fi
   setup_wifi();
 
-  // Enable the SAMD21 Hardware Watchdog Timer (16 second timeout)
-  watchdogSetup();
-  Serial.println(F("SAMD21 Hardware Watchdog enabled (16s timeout)."));
+  Serial.println(F("Setup complete. SAMD21 Hardware Watchdog armed."));
 }
 
 void loop() {
@@ -177,6 +203,21 @@ void loop() {
     }
   }
 
+  // Guard: do not attempt MQTT operations if Wi-Fi is down
+  if (WiFi.status() != WL_CONNECTED) {
+    return;
+  }
+
+  // If MQTT has repeatedly failed, the Wi-Fi link or NINA socket layer is
+  // likely dead
+  if (consecutiveMqttFailures >= MAX_MQTT_FAILURES_BEFORE_WIFI_RESET) {
+    Serial.println(
+        F("Too many consecutive MQTT failures. Forcing WiFi restart..."));
+    consecutiveMqttFailures = 0;
+    setup_wifi();
+    return;
+  }
+
   // Ensure MQTT connection is maintained
   if (!mqttClient.connected()) {
     if (now - lastConnectionAttempt > RECONNECT_INTERVAL_MS) {
@@ -184,9 +225,13 @@ void loop() {
       reconnect_mqtt();
     }
   } else {
-    // Process incoming MQTT messages and immediately drain any queued packets in the WiFi buffer
+    // Process incoming MQTT messages and drain queued packets safely without
+    // CPU/watchdog starvation
     mqttClient.loop();
-    while (wifiClient.available() > 0 && mqttClient.connected()) {
+    int drainCount = 0;
+    while (wifiClient.available() > 0 && mqttClient.connected() &&
+           ++drainCount < 5) {
+      watchdogReset();
       mqttClient.loop();
     }
   }
@@ -204,7 +249,8 @@ void loop() {
     LUMINAIRE_USER = pendingUserId;
 
     // Generate new topic string
-    snprintf(mqtt_data_topic, sizeof(mqtt_data_topic), "%s/%d", mqtt_base_topic, LUMINAIRE_USER);
+    snprintf(mqtt_data_topic, sizeof(mqtt_data_topic), "%s/%d", mqtt_base_topic,
+             LUMINAIRE_USER);
 
     // Subscribe to new topic
     if (mqttClient.subscribe(mqtt_data_topic)) {
@@ -220,7 +266,8 @@ void loop() {
     // Clear LEDs immediately on user change
     pixels.clear();
     pixels.show();
-    newPixelDataAvailable = false; // Discard any old pending frame from previous user
+    newPixelDataAvailable =
+        false; // Discard any old pending frame from previous user
 
     // Publish updated status immediately over MQTT
     publish_status();
@@ -240,8 +287,10 @@ void loop() {
   }
 
   // Update NeoPixels outside callback with frame rate throttling (~30 FPS)
-  // This prevents back-to-back interrupt disabling which can stall WiFiNINA SPI communications
-  if (newPixelDataAvailable && (now - lastPixelRender >= MIN_PIXEL_INTERVAL_MS)) {
+  // This prevents back-to-back interrupt disabling which can stall WiFiNINA SPI
+  // communications
+  if (newPixelDataAvailable &&
+      (now - lastPixelRender >= MIN_PIXEL_INTERVAL_MS)) {
     lastPixelRender = now;
     newPixelDataAvailable = false;
 
@@ -271,7 +320,9 @@ void loop() {
     Serial.print(totalMessagesReceived);
     if (lastMessageReceivedTime > 0) {
       Serial.print(F(" (Last msg "));
-      Serial.print((now >= lastMessageReceivedTime) ? (now - lastMessageReceivedTime) / 1000 : 0);
+      Serial.print((now >= lastMessageReceivedTime)
+                       ? (now - lastMessageReceivedTime) / 1000
+                       : 0);
       Serial.print(F("s ago)"));
     }
     Serial.println();
@@ -284,21 +335,42 @@ void loop() {
   }
 }
 
+// --- Hardware Reset NINA-W102 WiFi Coprocessor ---
+void hardResetWiFiModule() {
+  Serial.println(F("Performing hardware reset pulse on NINA WiFi module..."));
+  pinMode(NINA_RESETN, OUTPUT);
+  digitalWrite(NINA_RESETN, LOW);
+  delay(100);
+  digitalWrite(NINA_RESETN, HIGH);
+  delay(750); // Allow ESP32 time to complete bootloader initialization
+}
+
 // --- WiFi Setup Function ---
 void setup_wifi() {
   LedBlue(); // Show Blue LED when connecting to Wi-Fi
   Serial.print(F("Connecting to WiFi: "));
   Serial.println(ssid);
 
+  // If already connected or recovering, disconnect cleanly
+  if (WiFi.status() == WL_CONNECTED) {
+    WiFi.disconnect();
+  }
+
   // Check if the WiFi module is present
   if (WiFi.status() == WL_NO_MODULE) {
-    Serial.println(F("Communication with WiFi module failed!"));
-    while (true) {
-      // Loop forever, watchdog will trigger reset if enabled
+    Serial.println(F("Communication with WiFi module failed! Attempting "
+                     "hardware reset of NINA..."));
+    hardResetWiFiModule();
+    if (WiFi.status() == WL_NO_MODULE) {
+      Serial.println(F("WiFi module permanently unresponsive! Triggering MCU "
+                       "system reset..."));
+      delay(500);
+      NVIC_SystemReset();
     }
   }
 
-  // Attempt to connect to WiFi network (non-infinite loop to prevent permanent hang)
+  // Attempt to connect to WiFi network (non-infinite loop to prevent permanent
+  // hang)
   int attempts = 0;
   while (WiFi.status() != WL_CONNECTED && attempts < 5) {
     watchdogReset();
@@ -324,6 +396,10 @@ void setup_wifi() {
 
 // --- MQTT Reconnection Function ---
 bool reconnect_mqtt() {
+  if (WiFi.status() != WL_CONNECTED) {
+    return false;
+  }
+
   watchdogReset();
   LedBlue();
   Serial.print(F("Attempting MQTT connection..."));
@@ -332,11 +408,14 @@ bool reconnect_mqtt() {
   wifiClient.stop();
   watchdogReset();
 
-  // Connect with username, password, and Last Will and Testament (LWT) on status topic with retain=true
-  // If connection drops ungracefully, broker publishes {"status":"offline"}
+  // Connect with username, password, and Last Will and Testament (LWT) on
+  // status topic with retain=true If connection drops ungracefully, broker
+  // publishes {"status":"offline"}
   const char *lwt_payload = "{\"status\":\"offline\"}";
-  if (mqttClient.connect(mqtt_client_id, mqtt_username, mqtt_password, status_topic, 0, true, lwt_payload)) {
+  if (mqttClient.connect(mqtt_client_id, mqtt_username, mqtt_password,
+                         status_topic, 0, true, lwt_payload)) {
     Serial.println(F("connected!"));
+    consecutiveMqttFailures = 0;
     watchdogReset();
 
     bool subscribed_ok = true;
@@ -372,7 +451,7 @@ bool reconnect_mqtt() {
     watchdogReset();
 
     if (subscribed_ok) {
-      LedGreen(); // Success!
+      LedGreen();       // Success!
       publish_status(); // Publish initial online status immediately
     } else {
       LedRed(); // Failure!
@@ -383,6 +462,9 @@ bool reconnect_mqtt() {
     Serial.print(mqttClient.state());
     Serial.println(F(" Retrying in 5 seconds..."));
     LedRed();
+    wifiClient.stop(); // CRITICAL: Release socket descriptor immediately to
+                       // avoid NINA socket exhaustion
+    consecutiveMqttFailures++;
     watchdogReset();
     return false;
   }
@@ -397,22 +479,26 @@ void publish_status() {
   IPAddress ip = WiFi.localIP();
   char statusPayload[256];
   snprintf(statusPayload, sizeof(statusPayload),
-    "{\"status\":\"online\",\"uptime_s\":%lu,\"user\":%d,\"brightness\":%d,\"free_ram\":%d,\"wifi_rssi\":%d,\"ip\":\"%u.%u.%u.%u\",\"msgs\":%lu,\"last_reset\":\"%s\"}",
-    millis() / 1000,
-    LUMINAIRE_USER,
-    LUMINAIRE_BRIGHTNESS,
-    getFreeRam(),
-    WiFi.RSSI(),
-    ip[0], ip[1], ip[2], ip[3],
-    totalMessagesReceived,
-    resetReasonStr
-  );
+           "{\"status\":\"online\",\"uptime_s\":%lu,\"user\":%d,\"brightness\":"
+           "%d,\"free_ram\":%d,\"wifi_rssi\":%d,\"ip\":\"%u.%u.%u.%u\","
+           "\"msgs\":%lu,\"last_reset\":\"%s\"}",
+           millis() / 1000, LUMINAIRE_USER, LUMINAIRE_BRIGHTNESS, getFreeRam(),
+           WiFi.RSSI(), ip[0], ip[1], ip[2], ip[3], totalMessagesReceived,
+           resetReasonStr);
 
-  mqttClient.publish(status_topic, statusPayload, true); // true = retained message
+  bool ok = mqttClient.publish(status_topic, statusPayload,
+                               true); // true = retained message
+  if (!ok) {
+    Serial.println(F("MQTT status publish failed! Socket appears dead. Forcing "
+                     "clean disconnect..."));
+    mqttClient.disconnect();
+    wifiClient.stop();
+  }
 }
 
 // --- MQTT Message Callback Function ---
-// This function is kept fast and lightweight. Heavy work (network subscribing, NeoPixel show) is deferred to loop().
+// This function is kept fast and lightweight. Heavy work (network subscribing,
+// NeoPixel show) is deferred to loop().
 void mqtt_callback(char *topic, byte *payload, unsigned int length) {
   totalMessagesReceived++;
   lastMessageReceivedTime = millis();
@@ -464,17 +550,23 @@ void printResetReason() {
     strncpy(resetReasonStr, "Power-On Reset", sizeof(resetReasonStr) - 1);
     Serial.println(F("Power-On Reset (Clean cold start)"));
   } else if (rcause & PM_RCAUSE_BOD33) {
-    strncpy(resetReasonStr, "Brownout BOD33 (3.3V)", sizeof(resetReasonStr) - 1);
-    Serial.println(F(">>> BROWNOUT DETECTOR BOD33 TRIGGERED (3.3V power dropped!) <<< -> Check LED power draw!"));
+    strncpy(resetReasonStr, "Brownout BOD33 (3.3V)",
+            sizeof(resetReasonStr) - 1);
+    Serial.println(F(">>> BROWNOUT DETECTOR BOD33 TRIGGERED (3.3V power "
+                     "dropped!) <<< -> Check LED power draw!"));
   } else if (rcause & PM_RCAUSE_BOD12) {
-    strncpy(resetReasonStr, "Brownout BOD12 (1.2V)", sizeof(resetReasonStr) - 1);
-    Serial.println(F(">>> BROWNOUT DETECTOR BOD12 TRIGGERED (1.2V core power dropped!) <<<"));
+    strncpy(resetReasonStr, "Brownout BOD12 (1.2V)",
+            sizeof(resetReasonStr) - 1);
+    Serial.println(F(">>> BROWNOUT DETECTOR BOD12 TRIGGERED (1.2V core power "
+                     "dropped!) <<<"));
   } else if (rcause & PM_RCAUSE_EXT) {
     strncpy(resetReasonStr, "External Reset Pin", sizeof(resetReasonStr) - 1);
     Serial.println(F("External Reset Pin / Reset Button"));
   } else if (rcause & PM_RCAUSE_WDT) {
-    strncpy(resetReasonStr, "Watchdog Timeout (>16s)", sizeof(resetReasonStr) - 1);
-    Serial.println(F(">>> WATCHDOG TIMER RESET (Firmware hung for >16s) <<< -> SPI or WiFi deadlock!"));
+    strncpy(resetReasonStr, "Watchdog Timeout (>16s)",
+            sizeof(resetReasonStr) - 1);
+    Serial.println(F(">>> WATCHDOG TIMER RESET (Firmware hung for >16s) <<< -> "
+                     "SPI or WiFi deadlock!"));
   } else if (rcause & PM_RCAUSE_SYST) {
     strncpy(resetReasonStr, "Software Reset", sizeof(resetReasonStr) - 1);
     Serial.println(F("Software System Reset"));
@@ -493,25 +585,39 @@ int getFreeRam() {
 
 // --- SAMD21 Native Hardware Watchdog Timer Setup (16-second timeout) ---
 void watchdogSetup() {
-  // Use Generic Clock Generator 2 for WDT (running from 32.768kHz Ultra-Low Power oscillator OSCULP32K)
-  GCLK->GENDIV.reg = GCLK_GENDIV_ID(2) | GCLK_GENDIV_DIV(4); // 32.768kHz / 32 = 1.024kHz
-  while (GCLK->STATUS.bit.SYNCBUSY);
+  // Use Generic Clock Generator 2 for WDT (running from 32.768kHz Ultra-Low
+  // Power oscillator OSCULP32K)
+  GCLK->GENDIV.reg =
+      GCLK_GENDIV_ID(2) | GCLK_GENDIV_DIV(4); // 32.768kHz / 32 = 1.024kHz
+  while (GCLK->STATUS.bit.SYNCBUSY)
+    ;
 
-  GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(2) | GCLK_GENCTRL_GENEN | GCLK_GENCTRL_SRC_OSCULP32K | GCLK_GENCTRL_DIVSEL;
-  while (GCLK->STATUS.bit.SYNCBUSY);
+  GCLK->GENCTRL.reg = GCLK_GENCTRL_ID(2) | GCLK_GENCTRL_GENEN |
+                      GCLK_GENCTRL_SRC_OSCULP32K | GCLK_GENCTRL_DIVSEL;
+  while (GCLK->STATUS.bit.SYNCBUSY)
+    ;
 
-  GCLK->CLKCTRL.reg = GCLK_CLKCTRL_ID_WDT | GCLK_CLKCTRL_GEN_GCLK2 | GCLK_CLKCTRL_CLKEN;
-  while (GCLK->STATUS.bit.SYNCBUSY);
+  GCLK->CLKCTRL.reg =
+      GCLK_CLKCTRL_ID_WDT | GCLK_CLKCTRL_GEN_GCLK2 | GCLK_CLKCTRL_CLKEN;
+  while (GCLK->STATUS.bit.SYNCBUSY)
+    ;
+
+  // Disable WDT before writing new config (SAMD21 registers are
+  // enable-protected)
+  WDT->CTRL.reg = 0;
+  while (WDT->STATUS.bit.SYNCBUSY)
+    ;
 
   // Set WDT period to 16384 clock cycles (~16.0 seconds at 1024Hz)
   WDT->CONFIG.reg = WDT_CONFIG_PER_16K;
   WDT->CTRL.reg |= WDT_CTRL_ENABLE;
-  while (WDT->STATUS.bit.SYNCBUSY);
+  while (WDT->STATUS.bit.SYNCBUSY)
+    ;
 }
 
 // --- Feed Watchdog ---
 void watchdogReset() {
-  if (!WDT->STATUS.bit.SYNCBUSY) {
-    WDT->CLEAR.reg = WDT_CLEAR_CLEAR_KEY;
-  }
+  while (WDT->STATUS.bit.SYNCBUSY)
+    ;
+  WDT->CLEAR.reg = WDT_CLEAR_CLEAR_KEY;
 }

@@ -162,7 +162,7 @@ void sendmqtt(int LEDring){
     
       String message = "{\"method\": \"pulsewhite\"}";
 
-      if (client.publish(mqtt_topic_demo, message.c_str(), message.length(), false)) {
+      if (client.publish(mqtt_topic_demo, message.c_str())) {
         Serial.println("Message published");
       } else {
         Serial.println("Failed to publish message");
@@ -175,7 +175,7 @@ void sendmqtt(int LEDring){
     
       String message = "{\"spin\": \"50\"}";
 
-      if (client.publish(mqtt_topic_demo, message.c_str(), message.length(), false)) {
+      if (client.publish(mqtt_topic_demo, message.c_str())) {
         Serial.println("Message published");
       } else {
         Serial.println("Failed to publish message");
@@ -188,7 +188,7 @@ void sendmqtt(int LEDring){
   
     String message = "{\"method\": \"pulsewhite\"}";
 
-    if (client.publish(mqtt_topic_demo, message.c_str(), message.length(), false)) {
+    if (client.publish(mqtt_topic_demo, message.c_str())) {
       Serial.println("Message published");
     } else {
       Serial.println("Failed to publish message");

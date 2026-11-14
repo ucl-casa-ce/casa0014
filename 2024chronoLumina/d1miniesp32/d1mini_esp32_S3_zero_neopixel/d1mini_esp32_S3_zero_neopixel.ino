@@ -1,6 +1,7 @@
 // Duncan Wilson June 2024 - v1 - MQTT controlled NeoPixel Ring
 // Steven Gray - August 2024 - v1.1 - WebBluetooth Additions
 // Duncan Wilson - September 2024 - v1.2 - uploaded to 50 ESP32-C3-Zero devices for CASA0014
+// Duncan Wilson - November 2026 - v1.2.1 - updated wifi ssid to lab use C3 and huge app
 
 // works with ESP32-S3-Zero and 12 Neopixel ring
 // https://www.waveshare.com/wiki/ESP32-S3-Zero 
@@ -218,6 +219,12 @@ void setup() {
 
   // Connect to WiFi
   #if (defined(WIFI_MQTT) && WIFI_MQTT == 1)
+    // Stagger initial connection: spread 52 devices over ~18s to prevent AP queue choke
+    int staggerDelay = lightId.toInt() * 350;
+    Serial.print("Stagger delay (ms): ");
+    Serial.println(staggerDelay);
+    delay(staggerDelay);
+
     startWifi();
   #endif
 
@@ -235,22 +242,23 @@ void setup() {
   client.setCallback(callback);
   #endif
   
-  Serial.println("Set-up complete");
+  Serial.print("Set-up complete for: ");
+  Serial.println(lightId);
+  
 
 }
  
 void loop() {
   // Reconnect if necessary
   #if (defined(WIFI_MQTT) && WIFI_MQTT == 1)
-    if (!client.connected()) {
-      reconnectMQTT();
-    }
-    
-    if (WiFi.status() != WL_CONNECTED){
+    if (WiFi.status() != WL_CONNECTED) {
       startWifi();
+    } else if (!client.connected()) {
+      reconnectMQTT();
+    } else {
+      // keep mqtt alive
+      client.loop();
     }
-    // keep mqtt alive
-    client.loop();
   #endif
   
   #if (defined(BLE) && BLE == 1)
@@ -380,8 +388,8 @@ void handleAllUpdate(byte* payload, unsigned int length) {
       pulseWhite(10);
     } else {
       Serial.println("Unknown method");
-      return;
     }
+    return; // Method processed, don't check for allLEDs
   }
 
   // Check if "allLEDs" array exists
@@ -545,76 +553,62 @@ void fire(byte* payload, unsigned int length) {
 
 // Connect wifi and get mac address for unique clientId and print out some setup info
 #if (defined(WIFI_MQTT) && WIFI_MQTT == 1)
-void startWifi(){
-  // Function for connecting to a WiFi network
-  // is looking for UCL_IoT and a back up network (usually a home one!)
-  int n = WiFi.scanNetworks();
-  Serial.println("Scan done");
-  if (n == 0) {
-    Serial.println("no networks found");
-  } else {
-    Serial.print(n);
-    Serial.println(" networks found");
-    // loop through all the networks and if you find UCL_IoT or the backup - ssid1
-    // then connect to wifi
-    for (int i = 0; i < n; ++i){
-      // Primary network
-      Serial.println(WiFi.SSID(i));
-      if (WiFi.SSID(i) == ssid) {
-        Serial.print("Connecting to ");
-        Serial.println(ssid);
-        WiFi.begin(ssid, password);
-        while (WiFi.status() != WL_CONNECTED) {
-          delay(600);
-          Serial.print(".");
-        }
-        if (WiFi.status() == WL_CONNECTED) {
-          Serial.println("Connected to " + String(ssid));
-          break; // Exit the loop if connected
-        } else {
-          Serial.println("Failed to connect to " + String(ssid));
-        }
-      // Secondary Network
-      } else if (WiFi.SSID(i) == ssid1) {
-        Serial.print("Connecting to ");
-        Serial.println(ssid1);
-        WiFi.begin(ssid1, password1);
-        while (WiFi.status() != WL_CONNECTED) {
-          delay(600);
-          Serial.print(".");
-        }
-        if (WiFi.status() == WL_CONNECTED) {
-          Serial.println("Connected to " + String(ssid1));
-          break; // Exit the loop if connected
-        } else {
-          Serial.println("Failed to connect to " + String(ssid1));
-        }
-      // No Network!
-      } else {
-        Serial.println("Couldn't find any configured networks");
-      }
+void startWifi() {
+  WiFi.mode(WIFI_STA);
+  WiFi.setAutoReconnect(true);
+  WiFi.setSleep(false);                 // Prevent Wi-Fi modem sleep latency
+  WiFi.setTxPower(WIFI_POWER_11dBm);    // Reduce RF saturation in dense arrays
 
+  // Helper lambda to attempt connection with a 10-second timeout
+  auto tryConnect = [](const char* targetSsid, const char* targetPass) -> bool {
+    if (!targetSsid || strlen(targetSsid) == 0) return false;
+    Serial.print("Connecting to: ");
+    Serial.println(targetSsid);
+    
+    WiFi.begin(targetSsid, targetPass);
+    unsigned long startAttempt = millis();
+    
+    // Timeout after 10 seconds
+    while (WiFi.status() != WL_CONNECTED && millis() - startAttempt < 10000) {
+      delay(500);
+      Serial.print(".");
     }
+    Serial.println();
+    return (WiFi.status() == WL_CONNECTED);
+  };
+
+  // Try primary network, then fallback network
+  bool connected = tryConnect(ssid, password);
+  if (!connected) {
+    Serial.println("Primary network failed, trying backup...");
+    connected = tryConnect(ssid1, password1);
   }
 
+  if (connected) {
+    Serial.println("WiFi connected!");
+    Serial.print("IP address: ");
+    Serial.println(WiFi.localIP());
 
-  Serial.println("");
-  Serial.println("WiFi connected");
-  Serial.print("IP address: ");
-  Serial.println(WiFi.localIP());
-  // need to create a unique id to connect to MQTT broker - will use mac address
-  String macAddress = WiFi.macAddress();
-  macAddress.replace(":", "-"); 
-  clientId = "CE-NeoPixel-" + macAddress;
-  Serial.print("MQTT Client-id: ");  
-  Serial.println(clientId);
-
+    String macAddress = WiFi.macAddress();
+    macAddress.replace(":", "-");
+    clientId = "CE-NeoPixel-" + macAddress;
+    Serial.print("MQTT Client-id: ");
+    Serial.println(clientId);
+  } else {
+    Serial.println("WiFi connection failed. Will retry...");
+    // Add jittered backoff before returning so loop() doesn't hammer immediately
+    delay(random(1000, 3000));
+  }
 }
 
 // handle reconnects to MQTT broker
 void reconnectMQTT() {
-  // Loop until we're reconnected
-  while (!client.connected()) {
+  if (WiFi.status() != WL_CONNECTED) {
+    return; // Don't block MQTT if Wi-Fi is down
+  }
+
+  unsigned long startAttempt = millis();
+  while (!client.connected() && (millis() - startAttempt < 5000)) {
     Serial.println("Connecting to MQTT...");
     if (client.connect(clientId.c_str(), mqtt_username, mqtt_password)) {
       Serial.println("connected");
@@ -628,8 +622,8 @@ void reconnectMQTT() {
     } else {
       Serial.print("failed, rc=");
       Serial.print(client.state());
-      Serial.println(" try again in 5 seconds");
-      delay(5000);
+      Serial.println(" try again in 1 second");
+      delay(1000);
     }
   }
 }
@@ -692,13 +686,15 @@ void pulseWhite(uint8_t wait) {
   Serial.println("pulse white");
   for(int j=0; j<256; j++) { // Ramp up from 0 to 255
     // Fill entire pixel with white at gamma-corrected brightness level 'j':
-    pixels.fill(pixels.Color(0, 0, 0, pixels.gamma8(j)));
+    uint8_t g = pixels.gamma8(j);
+    pixels.fill(pixels.Color(g, g, g, g));
     pixels.show();
     delay(wait);
   }
 
   for(int j=255; j>=0; j--) { // Ramp down from 255 to 0
-    pixels.fill(pixels.Color(0, 0, 0, pixels.gamma8(j)));
+    uint8_t g = pixels.gamma8(j);
+    pixels.fill(pixels.Color(g, g, g, g));
     pixels.show();
     delay(wait);
   }
